@@ -35,7 +35,7 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -156,6 +156,10 @@ export default function DashboardLayout({
                   <p className="text-xs text-gray-500 truncate">
                     {session?.user?.email}
                   </p>
+                  {/* Auth Status Indicator */}
+                  <p className={`text-xs ${status === 'authenticated' ? 'text-green-600' : 'text-red-600'}`}>
+                    {status === 'authenticated' ? '🟢 Autenticato' : '🔴 Non autenticato'}
+                  </p>
                 </div>
               </div>
               <button
@@ -187,12 +191,31 @@ export default function DashboardLayout({
             </div>
             <span className="text-lg font-bold text-gray-900">UpStarter</span>
           </Link>
+          
+          {/* Mobile Auth Status */}
+          <div className="ml-auto">
+            <span className={`text-xs px-2 py-1 rounded ${status === 'authenticated' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              {status === 'authenticated' ? 'Auth ✓' : 'Auth ✗'}
+            </span>
+          </div>
         </div>
 
         <main className="p-4 lg:p-8">
           {children}
         </main>
       </div>
+
+      {/* Debug Info in Development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 right-4 bg-black bg-opacity-90 text-white p-3 rounded-lg text-xs max-w-sm z-50">
+          <div><strong>Auth Status:</strong> {status}</div>
+          <div><strong>User:</strong> {session?.user?.email || 'None'}</div>
+          <div><strong>Session:</strong> {session ? 'Active' : 'None'}</div>
+          {session && session.expires && (
+            <div><strong>Expires:</strong> {new Date(session.expires).toLocaleString()}</div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
