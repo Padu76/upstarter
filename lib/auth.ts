@@ -18,6 +18,12 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === 'google' || account?.provider === 'github') {
         try {
+          // Check that we have required user data
+          if (!user.email) {
+            console.error('No email provided by OAuth provider')
+            return false
+          }
+
           // Check if user exists in Airtable
           const existingUsers = await AirtableService.findRecords(TABLES.USERS, {
             filterByFormula: `{email} = "${user.email}"`
@@ -27,7 +33,7 @@ export const authOptions: NextAuthOptions = {
             // Create new user in Airtable
             await AirtableService.createRecord(TABLES.USERS, {
               email: user.email,
-              name: user.name,
+              name: user.name || 'Utente',
               user_type: 'startup', // Default type
               created_at: new Date().toISOString()
             })
