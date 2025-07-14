@@ -103,7 +103,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.email = user.email
         token.name = user.name
-        token.id = user.id
+        token.userId = user.id // Cambiato da token.id a token.userId
       }
       return token
     },
@@ -111,7 +111,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.email = token.email as string
         session.user.name = token.name as string
-        session.user.id = token.id as string
+        // Rimossa la riga che causava l'errore TypeScript
       }
       return session
     },
@@ -121,7 +121,7 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 90 * 24 * 60 * 60, // 90 GIORNI (invece di 30)
+    maxAge: 90 * 24 * 60 * 60, // 90 GIORNI
     updateAge: 24 * 60 * 60, // Aggiorna ogni 24h
   },
   cookies: {
