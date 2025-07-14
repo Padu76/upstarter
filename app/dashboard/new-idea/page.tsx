@@ -1,21 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { ArrowLeft, ArrowRight, Lightbulb, FileText, Upload } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { 
-  Lightbulb, 
-  ArrowRight, 
-  ArrowLeft, 
-  CheckCircle, 
-  Loader2, 
-  Target, 
-  Users, 
-  DollarSign,
-  AlertCircle,
-  Sparkles
-} from 'lucide-react'
+import DocumentAnalyzer from '@/components/DocumentAnalyzer'
 
-interface IdeaFormData {
+interface FormData {
   title: string
   description: string
   target_market: string
@@ -29,10 +19,9 @@ interface IdeaFormData {
 }
 
 export default function NewIdeaPage() {
-  const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [formData, setFormData] = useState<IdeaFormData>({
+  const [analysisMode, setAnalysisMode] = useState<'form' | 'document'>('form')
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
     target_market: '',
@@ -44,69 +33,29 @@ export default function NewIdeaPage() {
     timeline: '',
     main_challenges: ''
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter()
 
-  const steps = [
-    {
-      id: 1,
-      title: 'Idea Base',
-      description: 'Descrivi la tua idea in modo generale',
-      icon: Lightbulb,
-      fields: ['title', 'description']
-    },
-    {
-      id: 2,
-      title: 'Mercato & Valore',
-      description: 'Definisci il mercato di riferimento e la value proposition',
-      icon: Target,
-      fields: ['target_market', 'value_proposition']
-    },
-    {
-      id: 3,
-      title: 'Business Model',
-      description: 'Come pensi di monetizzare e battere la concorrenza',
-      icon: DollarSign,
-      fields: ['business_model', 'competitive_advantage']
-    },
-    {
-      id: 4,
-      title: 'Team & Risorse',
-      description: 'Esperienza del team e risorse necessarie',
-      icon: Users,
-      fields: ['team_experience', 'funding_needed', 'timeline', 'main_challenges']
-    }
-  ]
+  const totalSteps = 4
 
-  const handleInputChange = (field: keyof IdeaFormData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
+  const updateFormData = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const getCurrentStepFields = () => {
-    const step = steps.find(s => s.id === currentStep)
-    return step?.fields || []
-  }
-
-  const isCurrentStepValid = () => {
-    const fields = getCurrentStepFields()
-    return fields.every(field => formData[field as keyof IdeaFormData].trim() !== '')
-  }
-
-  const handleNext = () => {
-    if (currentStep < steps.length) {
+  const nextStep = () => {
+    if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1)
     }
   }
 
-  const handlePrevious = () => {
+  const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
     }
   }
 
-  const handleAnalyze = async () => {
-    setIsAnalyzing(true)
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
     try {
       const response = await fetch('/api/analyze-idea', {
         method: 'POST',
@@ -124,291 +73,372 @@ export default function NewIdeaPage() {
             team_experience: formData.team_experience,
             funding_needed: formData.funding_needed,
             timeline: formData.timeline,
-            main_challenges: formData.main_challenges
+            main_challenges: formData.main_challenges,
           }
         })
       })
 
       if (response.ok) {
         const result = await response.json()
-        router.push(`/dashboard/projects/${result.project_id}`)
+        router.push(`/dashboard/analysis/${result.projectId}`)
       } else {
-        throw new Error('Errore durante l&apos;analisi')
+        console.error('Errore durante l\'analisi')
       }
     } catch (error) {
       console.error('Errore:', error)
-      alert('Si è verificato un errore durante l&apos;analisi. Riprova.')
     } finally {
-      setIsAnalyzing(false)
+      setIsSubmitting(false)
     }
   }
 
-  const renderStepContent = () => {
+  const handleDocumentAnalysis = (analysis: any) => {
+    router.push(`/dashboard/analysis/${analysis.projectId}`)
+  }
+
+  const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Titolo della tua idea *
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="es. EcoFood Delivery, AI Study Buddy, FinTech per PMI..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Descrizione dettagliata *
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Descrivi la tua idea in dettaglio: cosa fa, come funziona, che problema risolve..."
-                rows={6}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-        )
-
+        return formData.title.trim() !== '' && formData.description.trim() !== ''
       case 2:
-        return (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mercato di riferimento *
-              </label>
-              <textarea
-                value={formData.target_market}
-                onChange={(e) => handleInputChange('target_market', e.target.value)}
-                placeholder="Chi sono i tuoi clienti target? Dimensione del mercato, caratteristiche demografiche, comportamenti..."
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Value Proposition *
-              </label>
-              <textarea
-                value={formData.value_proposition}
-                onChange={(e) => handleInputChange('value_proposition', e.target.value)}
-                placeholder="Che valore unico offri? Perché i clienti dovrebbero scegliere te invece di alternative esistenti?"
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-        )
-
+        return formData.target_market.trim() !== '' && formData.value_proposition.trim() !== ''
       case 3:
-        return (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Modello di Business *
-              </label>
-              <textarea
-                value={formData.business_model}
-                onChange={(e) => handleInputChange('business_model', e.target.value)}
-                placeholder="Come generi ricavi? Subscription, marketplace, freemium, vendita diretta, commissioni..."
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vantaggio Competitivo *
-              </label>
-              <textarea
-                value={formData.competitive_advantage}
-                onChange={(e) => handleInputChange('competitive_advantage', e.target.value)}
-                placeholder="Cosa ti rende unico? Tecnologia proprietaria, network effects, first-mover advantage..."
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-        )
-
+        return formData.business_model.trim() !== '' && formData.competitive_advantage.trim() !== ''
       case 4:
-        return (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Esperienza del Team *
-              </label>
-              <textarea
-                value={formData.team_experience}
-                onChange={(e) => handleInputChange('team_experience', e.target.value)}
-                placeholder="Background ed esperienze rilevanti del team fondatore..."
-                rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Funding Necessario *
-              </label>
-              <input
-                type="text"
-                value={formData.funding_needed}
-                onChange={(e) => handleInputChange('funding_needed', e.target.value)}
-                placeholder="es. €100K per MVP, €500K per Serie A..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Timeline di Sviluppo *
-              </label>
-              <input
-                type="text"
-                value={formData.timeline}
-                onChange={(e) => handleInputChange('timeline', e.target.value)}
-                placeholder="es. MVP in 6 mesi, lancio in 12 mesi..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Principali Sfide *
-              </label>
-              <textarea
-                value={formData.main_challenges}
-                onChange={(e) => handleInputChange('main_challenges', e.target.value)}
-                placeholder="Quali sono i principali rischi e sfide che prevedi?"
-                rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-        )
-
+        return formData.team_experience.trim() !== '' && formData.funding_needed.trim() !== ''
       default:
-        return null
+        return false
     }
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-blue-100 rounded-lg">
-            <Sparkles className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Analizza la Tua Idea</h1>
-            <p className="text-gray-600">L&apos;AI di Claude analizzerà la tua startup idea e ti darà feedback dettagliato</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress Steps */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div className={`
-                flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors
-                ${currentStep >= step.id 
-                  ? 'bg-blue-600 border-blue-600 text-white' 
-                  : 'border-gray-300 text-gray-500'
-                }
-              `}>
-                {currentStep > step.id ? (
-                  <CheckCircle className="w-5 h-5" />
-                ) : (
-                  <step.icon className="w-5 h-5" />
-                )}
-              </div>
-              {index < steps.length - 1 && (
-                <div className={`
-                  w-full h-0.5 mx-4 transition-colors
-                  ${currentStep > step.id ? 'bg-blue-600' : 'bg-gray-300'}
-                `} />
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="mt-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {steps[currentStep - 1]?.title}
-          </h2>
-          <p className="text-sm text-gray-600">
-            {steps[currentStep - 1]?.description}
-          </p>
-        </div>
-      </div>
-
-      {/* Form Content */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-        {renderStepContent()}
-      </div>
-
-      {/* Navigation Buttons */}
-      <div className="flex justify-between items-center">
         <button
-          onClick={handlePrevious}
-          disabled={currentStep === 1}
-          className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
-          Indietro
+          Torna alla Dashboard
         </button>
-
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span>{currentStep} di {steps.length}</span>
-        </div>
-
-        {currentStep < steps.length ? (
-          <button
-            onClick={handleNext}
-            disabled={!isCurrentStepValid()}
-            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Avanti
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={handleAnalyze}
-            disabled={!isCurrentStepValid() || isAnalyzing}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Analisi in corso...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Analizza con AI
-              </>
-            )}
-          </button>
-        )}
-      </div>
-
-      {/* Info Box */}
-      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-3 bg-blue-100 rounded-xl">
+            <Lightbulb className="w-8 h-8 text-blue-600" />
+          </div>
           <div>
-            <h3 className="font-semibold text-blue-900 mb-1">💡 Come funziona l&apos;analisi AI</h3>
-            <p className="text-sm text-blue-800">
-              Claude AI analizzerà la tua idea utilizzando framework consolidati come il Business Model Canvas, 
-              analisi SWOT e valutazione del mercato. Riceverai un report dettagliato con score, 
-              feedback specifici e un piano di miglioramento personalizzato.
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900">Analizza la Tua Idea</h1>
+            <p className="text-gray-600">Il nostro sistema analizzerà la tua startup idea e ti darà feedback dettagliato</p>
           </div>
         </div>
+      </div>
+
+      {/* Mode Selection */}
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Scegli il metodo di analisi</h3>
+        <div className="grid md:grid-cols-2 gap-4">
+          <button
+            onClick={() => setAnalysisMode('form')}
+            className={`p-4 rounded-lg border-2 transition-all ${
+              analysisMode === 'form'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <FileText className="w-6 h-6 text-blue-600" />
+              <span className="font-semibold text-gray-900">Questionario Guidato</span>
+            </div>
+            <p className="text-sm text-gray-600 text-left">
+              Compila un questionario dettagliato per descrivere la tua idea startup
+            </p>
+          </button>
+
+          <button
+            onClick={() => setAnalysisMode('document')}
+            className={`p-4 rounded-lg border-2 transition-all ${
+              analysisMode === 'document'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <Upload className="w-6 h-6 text-purple-600" />
+              <span className="font-semibold text-gray-900">Carica Documento</span>
+            </div>
+            <p className="text-sm text-gray-600 text-left">
+              Carica un file Word o PDF con la presentazione del tuo progetto
+            </p>
+          </button>
+        </div>
+      </div>
+
+      {/* Document Analysis Mode */}
+      {analysisMode === 'document' && (
+        <DocumentAnalyzer onAnalysisComplete={handleDocumentAnalysis} />
+      )}
+
+      {/* Form Analysis Mode */}
+      {analysisMode === 'form' && (
+        <div className="bg-white rounded-xl shadow-lg">
+          {/* Progress Bar */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-900">Progresso</span>
+              <span className="text-sm text-gray-500">{currentStep} di {totalSteps}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all"
+                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="p-6">
+            {/* Step 1: Idea Base */}
+            {currentStep === 1 && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
+                    1
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Idea Base</h2>
+                    <p className="text-gray-600">Descrivi la tua idea in modo generale</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                    Titolo della tua idea *
+                  </label>
+                  <input
+                    type="text"
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => updateFormData('title', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="es. EcoFood Delivery, AI Study Buddy, FinTech per PMI..."
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                    Descrizione dettagliata *
+                  </label>
+                  <textarea
+                    id="description"
+                    rows={6}
+                    value={formData.description}
+                    onChange={(e) => updateFormData('description', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Descrivi la tua idea in dettaglio: cosa fa, come funziona, che problema risolve..."
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Market & Value */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
+                    2
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Mercato & Valore</h2>
+                    <p className="text-gray-600">Definisci il mercato di riferimento e la value proposition</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="target_market" className="block text-sm font-medium text-gray-700 mb-2">
+                    Mercato di riferimento *
+                  </label>
+                  <textarea
+                    id="target_market"
+                    rows={4}
+                    value={formData.target_market}
+                    onChange={(e) => updateFormData('target_market', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Chi sono i tuoi clienti target? Dimensione del mercato, caratteristiche demografiche, comportamenti..."
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="value_proposition" className="block text-sm font-medium text-gray-700 mb-2">
+                    Value Proposition *
+                  </label>
+                  <textarea
+                    id="value_proposition"
+                    rows={4}
+                    value={formData.value_proposition}
+                    onChange={(e) => updateFormData('value_proposition', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Che valore unico offri? Perché i clienti dovrebbero scegliere te invece di alternative esistenti?"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Business Model */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
+                    3
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Modello di Business</h2>
+                    <p className="text-gray-600">Come genererai ricavi e qual è il tuo vantaggio competitivo</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="business_model" className="block text-sm font-medium text-gray-700 mb-2">
+                    Modello di Business *
+                  </label>
+                  <textarea
+                    id="business_model"
+                    rows={4}
+                    value={formData.business_model}
+                    onChange={(e) => updateFormData('business_model', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Come genererai ricavi? Pricing strategy, fonti di entrata, modello di subscription, commissioni..."
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="competitive_advantage" className="block text-sm font-medium text-gray-700 mb-2">
+                    Vantaggio Competitivo *
+                  </label>
+                  <textarea
+                    id="competitive_advantage"
+                    rows={4}
+                    value={formData.competitive_advantage}
+                    onChange={(e) => updateFormData('competitive_advantage', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Qual è il tuo vantaggio competitivo? Cosa ti differenzia dai competitor esistenti?"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Execution */}
+            {currentStep === 4 && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
+                    4
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Esecuzione</h2>
+                    <p className="text-gray-600">Team, finanziamenti e roadmap di sviluppo</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="team_experience" className="block text-sm font-medium text-gray-700 mb-2">
+                    Esperienza del Team *
+                  </label>
+                  <textarea
+                    id="team_experience"
+                    rows={3}
+                    value={formData.team_experience}
+                    onChange={(e) => updateFormData('team_experience', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Descrivi l'esperienza e le competenze del tuo team..."
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="funding_needed" className="block text-sm font-medium text-gray-700 mb-2">
+                    Finanziamenti Necessari *
+                  </label>
+                  <textarea
+                    id="funding_needed"
+                    rows={3}
+                    value={formData.funding_needed}
+                    onChange={(e) => updateFormData('funding_needed', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Di quanto capitale hai bisogno e come lo utilizzerai?"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="timeline" className="block text-sm font-medium text-gray-700 mb-2">
+                    Timeline di Sviluppo
+                  </label>
+                  <textarea
+                    id="timeline"
+                    rows={3}
+                    value={formData.timeline}
+                    onChange={(e) => updateFormData('timeline', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Quali sono le milestones principali e i tempi di sviluppo?"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="main_challenges" className="block text-sm font-medium text-gray-700 mb-2">
+                    Sfide Principali
+                  </label>
+                  <textarea
+                    id="main_challenges"
+                    rows={3}
+                    value={formData.main_challenges}
+                    onChange={(e) => updateFormData('main_challenges', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Quali sono le principali sfide e rischi che prevedi?"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Navigation */}
+          <div className="p-6 border-t border-gray-200">
+            <div className="flex justify-between">
+              <button
+                onClick={prevStep}
+                disabled={currentStep === 1}
+                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+              >
+                Indietro
+              </button>
+
+              {currentStep < totalSteps ? (
+                <button
+                  onClick={nextStep}
+                  disabled={!isStepValid()}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold flex items-center gap-2"
+                >
+                  Avanti
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={!isStepValid() || isSubmitting}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+                >
+                  {isSubmitting ? 'Analizzando...' : 'Analizza Idea'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Info Box */}
+      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h4 className="flex items-center gap-2 text-blue-800 font-semibold mb-2">
+          💡 Come funziona l'analisi del sistema
+        </h4>
+        <p className="text-blue-700 text-sm">
+          Il nostro sistema analizzerà la tua idea utilizzando framework consolidati come il Business Model Canvas, analisi SWOT e 
+          valutazione del mercato. Riceverai un report dettagliato con score, feedback specifici e un piano di miglioramento personalizzato.
+        </p>
       </div>
     </div>
   )
