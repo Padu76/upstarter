@@ -106,7 +106,30 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
       
       // Salva i dati dell'analisi in localStorage per il recupero
       if (result.analysisData) {
-        localStorage.setItem(`analysis_${result.projectId}`, JSON.stringify(result.analysisData))
+        try {
+          localStorage.setItem(`analysis_${result.projectId}`, JSON.stringify(result.analysisData))
+          console.log('Analysis data saved to localStorage')
+        } catch (storageError) {
+          console.warn('Could not save analysis to localStorage:', storageError)
+        }
+      }
+
+      // Salva il progetto nella lista progetti dell'utente
+      if (result.projectData && session.user?.email) {
+        try {
+          const existingProjects = JSON.parse(localStorage.getItem('user_projects') || '[]')
+          const userProjects = existingProjects.filter((p: any) => p.user_email === session.user?.email)
+          userProjects.push(result.projectData)
+          
+          // Mantieni progetti di altri utenti
+          const otherUsersProjects = existingProjects.filter((p: any) => p.user_email !== session.user?.email)
+          const allProjects = [...otherUsersProjects, ...userProjects]
+          
+          localStorage.setItem('user_projects', JSON.stringify(allProjects))
+          console.log('Project saved to user projects')
+        } catch (storageError) {
+          console.warn('Could not save project to localStorage:', storageError)
+        }
       }
 
       onAnalysisComplete(result)
