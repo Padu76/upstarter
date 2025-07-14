@@ -5,56 +5,86 @@ import Link from 'next/link'
 import { Rocket, Users, TrendingUp, ArrowRight, Star, CheckCircle, MessageSquare, Target, Lightbulb, UserPlus, Menu, X } from 'lucide-react'
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState('idea')
+  const [activeTab, setActiveTab] = useState<'idea' | 'team'>('idea')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+      <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-200 fixed w-full z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <Rocket className="h-8 w-8 text-indigo-600" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                UpStarter
-              </span>
+          <div className="flex justify-between items-center py-4">
+            {/* Logo */}
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-600 rounded-lg">
+                <Rocket className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gray-900">UpStarter</span>
             </div>
-            
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-gray-700 hover:text-indigo-600 transition-colors">Features</a>
-              <a href="#how-it-works" className="text-gray-700 hover:text-indigo-600 transition-colors">Come funziona</a>
-              <a href="#testimonials" className="text-gray-700 hover:text-indigo-600 transition-colors">Storie</a>
-              <Link href="/auth/signin">
-                <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-                  Accedi
-                </button>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-8">
+              <a href="#come-funziona" className="text-gray-600 hover:text-gray-900 transition-colors">
+                Come Funziona
+              </a>
+              <a href="#analizza" className="text-gray-600 hover:text-gray-900 transition-colors">
+                Analizza Idea
+              </a>
+              <a href="#teamup" className="text-gray-600 hover:text-gray-900 transition-colors">
+                Trova Team
+              </a>
+              <a href="#testimonials" className="text-gray-600 hover:text-gray-900 transition-colors">
+                Testimonianze
+              </a>
+            </div>
+
+            {/* Auth Buttons */}
+            <div className="hidden md:flex items-center gap-3">
+              <Link href="/auth/signin" className="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors">
+                Accedi
+              </Link>
+              <Link href="/auth/signup" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                Inizia Gratis
               </Link>
             </div>
 
             {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 rounded-md text-gray-700 hover:text-indigo-600 hover:bg-gray-100"
-              >
-                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
-            </div>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+            >
+              {isMenuOpen ? (
+                <X className="w-5 h-5 text-gray-600" />
+              ) : (
+                <Menu className="w-5 h-5 text-gray-600" />
+              )}
+            </button>
           </div>
 
           {/* Mobile Navigation */}
           {isMenuOpen && (
             <div className="md:hidden py-4 border-t border-gray-200">
-              <div className="flex flex-col space-y-4">
-                <a href="#features" className="text-gray-700 hover:text-indigo-600 transition-colors">Features</a>
-                <a href="#how-it-works" className="text-gray-700 hover:text-indigo-600 transition-colors">Come funziona</a>
-                <a href="#testimonials" className="text-gray-700 hover:text-indigo-600 transition-colors">Storie</a>
-                <Link href="/auth/signin">
-                  <button className="w-full bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+              <div className="flex flex-col space-y-3">
+                <a href="#come-funziona" className="text-gray-600 hover:text-gray-900 px-4 py-2">
+                  Come Funziona
+                </a>
+                <a href="#analizza" className="text-gray-600 hover:text-gray-900 px-4 py-2">
+                  Analizza Idea
+                </a>
+                <a href="#teamup" className="text-gray-600 hover:text-gray-900 px-4 py-2">
+                  Trova Team
+                </a>
+                <a href="#testimonials" className="text-gray-600 hover:text-gray-900 px-4 py-2">
+                  Testimonianze
+                </a>
+                <div className="flex flex-col gap-2 px-4 pt-3 border-t border-gray-200">
+                  <Link href="/auth/signin" className="text-center text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors">
                     Accedi
-                  </button>
-                </Link>
+                  </Link>
+                  <Link href="/auth/signup" className="text-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Inizia Gratis
+                  </Link>
+                </div>
               </div>
             </div>
           )}
@@ -62,356 +92,383 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-20 pb-32">
+      <section className="pt-24 pb-12 bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-8">
-              Trasforma la tua{' '}
-              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                idea
-              </span>
-              <br />
-              in una{' '}
-              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                startup
-              </span>
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+              Trasforma le tue{' '}
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                idee
+              </span>{' '}
+              in startup di successo
             </h1>
-            
-            <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-              La piattaforma evolutiva che ti accompagna dalla validazione dell'idea alla costruzione del team perfetto. 
-              Analizza, migliora e trova i co-founder giusti per il tuo progetto.
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              La piattaforma evolutiva che analizza le tue idee con sistema avanzato,
+              ti aiuta a trovare co-founder perfetti e ti guida verso il successo imprenditoriale.
             </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/auth/signup" className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-semibold">
+                Inizia Gratuitamente
+              </Link>
+              <a href="#come-funziona" className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:bg-gray-50 transition-colors text-lg font-semibold">
+                Scopri Come Funziona
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            {/* CTA Tabs */}
-            <div className="flex flex-col md:flex-row gap-6 justify-center items-center mb-16">
-              <div className="bg-white rounded-2xl p-2 shadow-xl border">
-                <div className="flex rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setActiveTab('idea')}
-                    className={`px-8 py-4 font-semibold transition-all ${
-                      activeTab === 'idea'
-                        ? 'bg-indigo-600 text-white shadow-lg'
-                        : 'text-gray-600 hover:text-indigo-600'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Lightbulb className="h-5 w-5" />
-                      <span>Analizza la tua idea</span>
-                    </div>
-                  </button>
-                  
-                  <button
-                    onClick={() => setActiveTab('team')}
-                    className={`px-8 py-4 font-semibold transition-all ${
-                      activeTab === 'team'
-                        ? 'bg-purple-600 text-white shadow-lg'
-                        : 'text-gray-600 hover:text-purple-600'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-5 w-5" />
-                      <span>Trova il tuo team</span>
-                    </div>
-                  </button>
-                </div>
+      {/* Come Funziona Section */}
+      <section id="come-funziona" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Come Funziona UpStarter</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Un processo semplice e guidato per trasformare la tua idea in una startup vincente
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Lightbulb className="w-8 h-8 text-blue-600" />
               </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">1. Analizza la Tua Idea</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Il nostro sistema analizza la tua idea attraverso framework consolidati come Business Model Canvas e Lean Startup, fornendo un report dettagliato con punteggio e raccomandazioni.
+              </p>
             </div>
 
-            {/* Dynamic CTA Content */}
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Users className="w-8 h-8 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">2. Trova il Team Perfetto</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Usa TeamUp per connetterti con co-founder, sviluppatori, marketer e altri professionisti. Il nostro algoritmo di matching trova le persone giuste per il tuo progetto.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <TrendingUp className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">3. Cresci Costantemente</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Ricevi un piano di miglioramento personalizzato con task actionable, tracking dei progressi e suggerimenti per aumentare le tue possibilità di successo.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main CTA Section */}
+      <section id="analizza" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Inizia Il Tuo Percorso Imprenditoriale</h2>
+            <p className="text-xl text-gray-600">Scegli come vuoi iniziare la tua avventura startup</p>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex justify-center mb-8">
+            <div className="bg-white p-1 rounded-lg shadow-sm">
+              <button
+                onClick={() => setActiveTab('idea')}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                  activeTab === 'idea'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Analizza la Tua Idea
+              </button>
+              <button
+                onClick={() => setActiveTab('team')}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+                  activeTab === 'team'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Trova il Team
+              </button>
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          <div className="max-w-4xl mx-auto">
             {activeTab === 'idea' && (
-              <div className="bg-white rounded-3xl p-8 max-w-2xl mx-auto shadow-2xl border">
-                <div className="flex items-center justify-center mb-6">
-                  <div className="bg-indigo-100 p-4 rounded-full">
-                    <Target className="h-8 w-8 text-indigo-600" />
+              <div className="bg-white rounded-2xl shadow-xl p-8">
+                <div className="grid md:grid-cols-2 gap-8 items-center">
+                  <div>
+                    <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
+                      <Target className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Analisi Sistema Evolutiva</h3>
+                    <p className="text-gray-600 mb-6">
+                      Il nostro sistema analizza la tua idea attraverso framework consolidati come Business Model Canvas e Lean Startup.
+                    </p>
+                    <ul className="space-y-3 mb-6">
+                      <li className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-gray-700">Report personalizzati e actionable</span>
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-gray-700">Tracciamento dell&apos;evoluzione nel tempo</span>
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-gray-700">Suggerimenti di miglioramento continui</span>
+                      </li>
+                    </ul>
+                    <Link
+                      href="/auth/signup"
+                      className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                    >
+                      Analizza la Tua Idea
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6">
+                    <div className="bg-white rounded-lg p-4 mb-4">
+                      <div className="text-sm text-gray-500 mb-1">Punteggio Idea</div>
+                      <div className="text-2xl font-bold text-blue-600">87%</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 mb-4">
+                      <div className="text-sm text-gray-500 mb-2">Analisi SWOT</div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-green-50 p-2 rounded text-green-700">Punti di Forza</div>
+                        <div className="bg-red-50 p-2 rounded text-red-700">Debolezze</div>
+                        <div className="bg-blue-50 p-2 rounded text-blue-700">Opportunità</div>
+                        <div className="bg-yellow-50 p-2 rounded text-yellow-700">Minacce</div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                      <div className="text-sm text-gray-500 mb-2">Prossimi Step</div>
+                      <div className="space-y-1 text-xs text-gray-600">
+                        <div>• Validazione mercato</div>
+                        <div>• Sviluppo MVP</div>
+                        <div>• Team building</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  Valida e perfeziona la tua idea
-                </h3>
-                <p className="text-gray-600 mb-8">
-                  Il nostro AI analizza la tua idea attraverso le lenti di un business plan professionale. 
-                  Ottieni feedback evolutivi e migliora il tuo progetto nel tempo.
-                </p>
-                <Link href="/auth/signup">
-                  <button className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-8 py-4 rounded-xl font-semibold hover:from-indigo-700 hover:to-indigo-800 transition-all flex items-center justify-center space-x-2 shadow-lg">
-                    <span>Inizia l'analisi gratuita</span>
-                    <ArrowRight className="h-5 w-5" />
-                  </button>
-                </Link>
               </div>
             )}
 
             {activeTab === 'team' && (
-              <div className="bg-white rounded-3xl p-8 max-w-2xl mx-auto shadow-2xl border">
-                <div className="flex items-center justify-center mb-6">
-                  <div className="bg-purple-100 p-4 rounded-full">
-                    <UserPlus className="h-8 w-8 text-purple-600" />
+              <div id="teamup" className="bg-white rounded-2xl shadow-xl p-8">
+                <div className="grid md:grid-cols-2 gap-8 items-center">
+                  <div>
+                    <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
+                      <UserPlus className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">TeamUp: Trova Co-founder Perfetti</h3>
+                    <p className="text-gray-600 mb-6">
+                      Connettiti con sviluppatori, designer, marketer e altri imprenditori per creare il team dei tuoi sogni.
+                    </p>
+                    <ul className="space-y-3 mb-6">
+                      <li className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-gray-700">Matching intelligente basato su skill</span>
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-gray-700">Profili verificati e dettagliati</span>
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-gray-700">Sistema di messaggistica integrato</span>
+                      </li>
+                    </ul>
+                    <Link
+                      href="/auth/signup"
+                      className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+                    >
+                      Trova il Tuo Team
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6">
+                    <div className="space-y-4">
+                      <div className="bg-white rounded-lg p-4 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-blue-600 font-semibold text-sm">MG</span>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Marco Giusti</div>
+                          <div className="text-sm text-gray-500">Full-Stack Developer</div>
+                        </div>
+                        <div className="ml-auto bg-green-100 text-green-700 px-2 py-1 rounded text-xs">98% Match</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                          <span className="text-purple-600 font-semibold text-sm">SR</span>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Sara Rossi</div>
+                          <div className="text-sm text-gray-500">UX/UI Designer</div>
+                        </div>
+                        <div className="ml-auto bg-green-100 text-green-700 px-2 py-1 rounded text-xs">95% Match</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                          <span className="text-green-600 font-semibold text-sm">LB</span>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">Luca Bianchi</div>
+                          <div className="text-sm text-gray-500">Marketing Specialist</div>
+                        </div>
+                        <div className="ml-auto bg-green-100 text-green-700 px-2 py-1 rounded text-xs">92% Match</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  Costruisci il team perfetto
-                </h3>
-                <p className="text-gray-600 mb-8">
-                  Connettiti con sviluppatori, designer, marketer e business developer. 
-                  Il nostro matching engine trova i co-founder giusti per il tuo progetto.
-                </p>
-                <Link href="/auth/signup">
-                  <button className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-4 rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all flex items-center justify-center space-x-2 shadow-lg">
-                    <span>Entra in TeamUp</span>
-                    <ArrowRight className="h-5 w-5" />
-                  </button>
-                </Link>
               </div>
             )}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Tutto quello che serve per far decollare la tua startup
-            </h2>
-            <p className="text-xl text-gray-600">
-              Una piattaforma completa per validare idee e costruire team vincenti
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl p-8 hover:shadow-lg transition-shadow">
-              <div className="bg-indigo-600 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
-                <TrendingUp className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Analisi Evolutiva</h3>
-              <p className="text-gray-600 mb-6">
-                Il nostro AI analizza la tua idea attraverso framework consolidati come Business Model Canvas e Lean Startup.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="h-4 w-4 text-indigo-600 mr-2" />
-                  Report personalizzati e actionable
-                </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="h-4 w-4 text-indigo-600 mr-2" />
-                  Tracciamento dell'evoluzione nel tempo
-                </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="h-4 w-4 text-indigo-600 mr-2" />
-                  Suggerimenti di miglioramento continui
-                </li>
-              </ul>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-8 hover:shadow-lg transition-shadow">
-              <div className="bg-purple-600 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
-                <Users className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">TeamUp Matching</h3>
-              <p className="text-gray-600 mb-6">
-                Trova co-founder, sviluppatori, designer e marketer compatibili con il tuo progetto e la tua vision.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="h-4 w-4 text-purple-600 mr-2" />
-                  Algoritmo di matching intelligente
-                </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="h-4 w-4 text-purple-600 mr-2" />
-                  Profili verificati e dettagliati
-                </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="h-4 w-4 text-purple-600 mr-2" />
-                  Sistema di messaggistica integrato
-                </li>
-              </ul>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-2xl p-8 hover:shadow-lg transition-shadow">
-              <div className="bg-pink-600 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
-                <MessageSquare className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Dashboard Evolutiva</h3>
-              <p className="text-gray-600 mb-6">
-                Gestisci tutti i tuoi progetti, connessioni e progressi da un'unica piattaforma intuitiva.
-              </p>
-              <ul className="space-y-2">
-                <li className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="h-4 w-4 text-pink-600 mr-2" />
-                  Storico completo dei progetti
-                </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="h-4 w-4 text-pink-600 mr-2" />
-                  KPI di evoluzione e crescita
-                </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="h-4 w-4 text-pink-600 mr-2" />
-                  Gestione team e collaborazioni
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section id="how-it-works" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Come funziona UpStarter
-            </h2>
-            <p className="text-xl text-gray-600">
-              Tre semplici step per trasformare la tua idea in una startup di successo
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="bg-indigo-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-white">1</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Analizza la tua idea</h3>
-              <p className="text-gray-600">
-                Descrivi il tuo progetto e rispondi al questionario guidato. Il nostro AI ti fornirà un'analisi dettagliata e suggerimenti di miglioramento.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-white">2</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Trova il tuo team</h3>
-              <p className="text-gray-600">
-                Pubblica il tuo progetto su TeamUp e connettiti con co-founder, sviluppatori e marketer che condividono la tua vision.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-pink-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-white">3</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Fai crescere la startup</h3>
-              <p className="text-gray-600">
-                Gestisci l'evoluzione del progetto, traccia i progressi e continua a migliorare con feedback costanti e nuove connessioni.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof */}
+      {/* Testimonials */}
       <section id="testimonials" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Storie di successo
-            </h2>
-            <p className="text-xl text-gray-600">
-              Giovani imprenditori che hanno trasformato le loro idee in realtà
-            </p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Cosa Dicono i Founder</h2>
+            <p className="text-xl text-gray-600">Storie di successo dalla community UpStarter</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-gray-50 rounded-2xl p-8 hover:shadow-lg transition-shadow">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="h-5 w-5 text-yellow-400 fill-current" />
-                  ))}
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                ))}
+              </div>
+              <p className="text-gray-600 mb-6 italic">
+                &quot;UpStarter mi ha aiutato a strutturare la mia idea e trovare il co-founder perfetto. Ora la nostra startup ha raccolto 500K di investimenti!&quot;
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-semibold">AM</span>
                 </div>
-                <p className="text-gray-600 mb-6 italic">
-                  "UpStarter mi ha aiutato a validare la mia idea e trovare il co-founder perfetto. In 3 mesi siamo passati da concept a MVP funzionante."
-                </p>
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center mr-4">
-                    <span className="text-white font-bold">M{i}</span>
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-900">Marco Rossi</div>
-                    <div className="text-sm text-gray-600">Founder, TechStartup</div>
-                  </div>
+                <div>
+                  <div className="font-semibold text-gray-900">Alessandro Marini</div>
+                  <div className="text-sm text-gray-500">Founder, TechFlow</div>
                 </div>
               </div>
-            ))}
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                ))}
+              </div>
+              <p className="text-gray-600 mb-6 italic">
+                &quot;L&apos;analisi sistema mi ha aperto gli occhi su aspetti del mio business che non avevo considerato. Raccomando UpStarter a tutti gli aspiranti imprenditori!&quot;
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-semibold">GF</span>
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">Giulia Ferretti</div>
+                  <div className="text-sm text-gray-500">Founder, EcoStart</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                ))}
+              </div>
+              <p className="text-gray-600 mb-6 italic">
+                &quot;Grazie a TeamUp ho trovato un team incredibile. Siamo passati da un&apos;idea a un prodotto funzionante in soli 4 mesi!&quot;
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-semibold">MR</span>
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">Marco Romano</div>
+                  <div className="text-sm text-gray-500">Founder, InnovateLab</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 bg-gradient-to-r from-indigo-600 to-purple-600">
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold text-white mb-6">
-            Pronto a trasformare la tua idea in realtà?
+            Pronto a Trasformare la Tua Idea in Realtà?
           </h2>
-          <p className="text-xl text-indigo-100 mb-8">
-            Unisciti a centinaia di giovani imprenditori che stanno costruendo il futuro
+          <p className="text-xl text-blue-100 mb-8">
+            Unisciti a migliaia di imprenditori che hanno scelto UpStarter per il loro percorso startup
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/signup">
-              <button className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-semibold hover:bg-gray-50 transition-colors shadow-lg">
-                Analizza la tua idea gratis
-              </button>
-            </Link>
-            <Link href="/auth/signup">
-              <button className="border-2 border-white text-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:text-indigo-600 transition-colors">
-                Esplora TeamUp
-              </button>
-            </Link>
-          </div>
+          <Link
+            href="/auth/signup"
+            className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors text-lg font-semibold"
+          >
+            Inizia Gratuitamente
+            <ArrowRight className="w-5 h-5" />
+          </Link>
+          <p className="text-blue-100 text-sm mt-4">Nessuna carta di credito richiesta • Setup in 2 minuti</p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-12">
+      <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Rocket className="h-6 w-6 text-indigo-400" />
-                <span className="text-xl font-bold text-white">UpStarter</span>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-2 bg-blue-600 rounded-lg">
+                  <Rocket className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-xl font-bold">UpStarter</span>
               </div>
-              <p className="text-sm">
-                La piattaforma evolutiva per trasformare idee in startup di successo.
+              <p className="text-gray-400 mb-4">
+                La piattaforma che trasforma idee in startup di successo.
               </p>
             </div>
-            
+
             <div>
-              <h4 className="font-semibold text-white mb-4">Prodotto</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Analisi AI</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">TeamUp</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Dashboard</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Prezzi</a></li>
+              <h4 className="font-semibold mb-4">Prodotto</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><a href="#analizza" className="hover:text-white transition-colors">Analisi Idee</a></li>
+                <li><a href="#teamup" className="hover:text-white transition-colors">TeamUp</a></li>
+                <li><a href="#come-funziona" className="hover:text-white transition-colors">Come Funziona</a></li>
               </ul>
             </div>
-            
+
             <div>
-              <h4 className="font-semibold text-white mb-4">Risorse</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Guida Startup</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Supporto</a></li>
+              <h4 className="font-semibold mb-4">Supporto</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Contatti</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Community</a></li>
               </ul>
             </div>
-            
+
             <div>
-              <h4 className="font-semibold text-white mb-4">Azienda</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Chi siamo</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Carriere</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Termini</a></li>
+              <h4 className="font-semibold mb-4">Legale</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Termini di Servizio</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Cookie Policy</a></li>
               </ul>
             </div>
           </div>
-          
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
+
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
             <p>&copy; 2025 UpStarter. Tutti i diritti riservati.</p>
           </div>
         </div>
