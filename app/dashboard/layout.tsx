@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { 
   LayoutDashboard, 
@@ -16,7 +16,6 @@ import {
   X, 
   Rocket,
   BarChart3,
-  Target,
   Bell,
   User,
   ChevronDown
@@ -30,7 +29,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
   const { data: session } = useSession()
 
   const navigation = [
