@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { IdeaAnalysisInput } from '@/lib/claude'
+import airtableService from '@/lib/airtable'
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,8 +51,54 @@ export async function POST(request: NextRequest) {
 
     // Genera un ID temporaneo
     let projectId = `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    let savedToDatabase = false
 
-    // Crea oggetto progetto per il client
+    // Salva in Airtable se configurato
+    if (process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID) {
+      try {
+        console.log('Saving to Airtable...')
+        
+        // Inizializza/trova utente
+        const user = await airtableService.initializeUser(
+          session.user.email!,
+          session.user.name || undefined
+        )
+        
+        // Crea progetto
+        const projectData = {
+          user_id: user.id!,
+          title: extractedInfo.title,
+          description: extractedInfo.description,
+          score: analysis.overall_score,
+          status: 'analyzed' as const,
+          type: 'professional' as const,
+          source: 'document_professional' as const,
+          source_file: fileName || 'Documento caricato',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+        
+        const savedProject = await airtableService.createProject(projectData)
+        projectId = savedProject.id!
+        
+        // Salva analisi dettagliata
+        await airtableService.createAnalysis({
+          project_id: projectId,
+          overall_score: analysis.overall_score,
+          analysis_data: JSON.stringify(analysis),
+          created_at: new Date().toISOString()
+        })
+        
+        savedToDatabase = true
+        console.log('Successfully saved to Airtable:', projectId)
+        
+      } catch (airtableError) {
+        console.error('Error saving to Airtable:', airtableError)
+        // Continua con localStorage fallback
+      }
+    }
+
+    // Prepara dati per il client
     const projectData = {
       id: projectId,
       title: extractedInfo.title,
@@ -63,10 +110,10 @@ export async function POST(request: NextRequest) {
       source_file: fileName || 'Documento caricato',
       user_email: session.user?.email || '',
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      saved_to_database: savedToDatabase
     }
 
-    // Salva temporaneamente i dati dell'analisi per il recupero
     const analysisData = {
       id: projectId,
       analysis: analysis,
@@ -76,7 +123,6 @@ export async function POST(request: NextRequest) {
       type: 'professional'
     }
 
-    // Restituisci tutto al client che gestirà il salvataggio in localStorage
     return NextResponse.json({
       success: true,
       analysis: analysis,
@@ -84,8 +130,9 @@ export async function POST(request: NextRequest) {
       projectId,
       fileName,
       analysisData,
-      projectData, // Nuovo: dati del progetto per il salvataggio client-side
-      type: 'professional'
+      projectData,
+      type: 'professional',
+      savedToDatabase
     })
 
   } catch (error) {
