@@ -103,6 +103,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.email = user.email
         token.name = user.name
+        token.id = user.id
       }
       return token
     },
@@ -110,6 +111,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.email = token.email as string
         session.user.name = token.name as string
+        session.user.id = token.id as string
       }
       return session
     },
@@ -119,18 +121,49 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 giorni
+    maxAge: 90 * 24 * 60 * 60, // 90 GIORNI (invece di 30)
+    updateAge: 24 * 60 * 60, // Aggiorna ogni 24h
   },
   cookies: {
     sessionToken: {
-      name: 'next-auth.session-token',
+      name: process.env.NODE_ENV === 'production' 
+        ? '__Secure-next-auth.session-token' 
+        : 'next-auth.session-token',
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 30 * 24 * 60 * 60 // 30 giorni
+        maxAge: 90 * 24 * 60 * 60, // 90 GIORNI
+        domain: process.env.NODE_ENV === 'production' 
+          ? '.vercel.app' 
+          : undefined
+      }
+    },
+    callbackUrl: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.callback-url'
+        : 'next-auth.callback-url',
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 90 * 24 * 60 * 60 // 90 GIORNI
+      }
+    },
+    csrfToken: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Host-next-auth.csrf-token'
+        : 'next-auth.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 90 * 24 * 60 * 60 // 90 GIORNI
       }
     }
-  }
+  },
+  debug: process.env.NODE_ENV === 'development',
+  secret: process.env.NEXTAUTH_SECRET,
 }
