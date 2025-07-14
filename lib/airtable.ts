@@ -8,108 +8,153 @@ const base = new Airtable({
 // Airtable Tables Configuration
 export const TABLES = {
   USERS: 'Users',
-  PROJECTS: 'Projects', 
+  PROJECTS: 'Projects',
   IDEAS_ANALYSIS: 'Ideas_Analysis',
-  IMPROVEMENT_PLANS: 'Improvement_Plans',
-  IMPROVEMENT_TASKS: 'Improvement_Tasks',
+  USER_PROFILES: 'User_Profiles',
+  PROJECT_LISTINGS: 'Project_Listings',
   MATCHES: 'Matches',
-  MATCHING_INTERACTIONS: 'Matching_Interactions',
+  INVESTOR_PROFILES: 'Investor_Profiles',
+  INVESTOR_MATCHES: 'Investor_Matches',
   MESSAGES: 'Messages',
-  NOTIFICATIONS: 'Notifications',
-  INVESTORS: 'Investors',
-  USER_PROGRESS: 'User_Progress',
-  ACHIEVEMENTS: 'Achievements'
+  IMPROVEMENT_PLANS: 'Improvement_Plans',
+  IMPROVEMENT_TASKS: 'Improvement_Tasks'
 } as const
 
-// Airtable Helper Functions
+// Type definitions for better type safety
+interface AirtableRecord {
+  id: string
+  fields: Record<string, unknown>
+  createdTime: string
+}
+
+interface CreateRecordData {
+  [key: string]: unknown
+}
+
+interface FindRecordsOptions {
+  filterByFormula?: string
+  sort?: Array<{ field: string; direction: 'asc' | 'desc' }>
+  maxRecords?: number
+  pageSize?: number
+}
+
 export class AirtableService {
-  
   // Create a new record
-  static async create(tableName: string, fields: Record<string, any>) {
+  static async createRecord(tableName: string, data: CreateRecordData): Promise<AirtableRecord> {
     try {
-      const records = await base(tableName).create([{ fields }])
-      return records[0]
+      const records = await base(tableName).create([{ fields: data }])
+      return {
+        id: records[0].id,
+        fields: records[0].fields,
+        createdTime: records[0].get('createdTime') as string
+      }
     } catch (error) {
       console.error(`Error creating record in ${tableName}:`, error)
       throw error
     }
   }
 
-  // Get record by ID
-  static async getById(tableName: string, recordId: string) {
+  // Find records with optional filtering
+  static async findRecords(tableName: string, options: FindRecordsOptions = {}): Promise<AirtableRecord[]> {
     try {
-      const record = await base(tableName).find(recordId)
-      return {
-        id: record.id,
-        ...record.fields
-      }
-    } catch (error) {
-      console.error(`Error fetching record ${recordId} from ${tableName}:`, error)
-      throw error
-    }
-  }
+      const query = base(tableName).select({
+        ...options
+      })
 
-  // Find records with filters
-  static async find(tableName: string, options: {
-    filterByFormula?: string
-    sort?: Array<{ field: string, direction?: 'asc' | 'desc' }>
-    maxRecords?: number
-    view?: string
-  } = {}) {
-    try {
-      const records = await base(tableName).select(options).all()
-      return records.map(record => ({
-        id: record.id,
-        ...record.fields
-      }))
+      const records: AirtableRecord[] = []
+      
+      await query.eachPage((pageRecords, fetchNextPage) => {
+        pageRecords.forEach(record => {
+          records.push({
+            id: record.id,
+            fields: record.fields,
+            createdTime: record.get('createdTime') as string
+          })
+        })
+        fetchNextPage()
+      })
+
+      return records
     } catch (error) {
       console.error(`Error finding records in ${tableName}:`, error)
       throw error
     }
   }
 
-  // Update record
-  static async update(tableName: string, recordId: string, fields: Record<string, any>) {
+  // Get a single record by ID
+  static async getRecord(tableName: string, recordId: string): Promise<AirtableRecord | null> {
+    try {
+      const record = await base(tableName).find(recordId)
+      return {
+        id: record.id,
+        fields: record.fields,
+        createdTime: record.get('createdTime') as string
+      }
+    } catch (error) {
+      console.error(`Error getting record ${recordId} from ${tableName}:`, error)
+      return null
+    }
+  }
+
+  // Update a record
+  static async updateRecord(tableName: string, recordId: string, data: CreateRecordData): Promise<AirtableRecord> {
     try {
       const records = await base(tableName).update([
-        { id: recordId, fields }
+        {
+          id: recordId,
+          fields: data
+        }
       ])
-      return records[0]
+
+      return {
+        id: records[0].id,
+        fields: records[0].fields,
+        createdTime: records[0].get('createdTime') as string
+      }
     } catch (error) {
       console.error(`Error updating record ${recordId} in ${tableName}:`, error)
       throw error
     }
   }
 
-  // Delete record
-  static async delete(tableName: string, recordId: string) {
+  // Delete a record
+  static async deleteRecord(tableName: string, recordId: string): Promise<boolean> {
     try {
-      const deletedRecord = await base(tableName).destroy(recordId)
-      return deletedRecord
+      await base(tableName).destroy([recordId])
+      return true
     } catch (error) {
       console.error(`Error deleting record ${recordId} from ${tableName}:`, error)
-      throw error
+      return false
     }
   }
 
   // Batch operations
-  static async batchCreate(tableName: string, records: Array<{ fields: Record<string, any> }>) {
+  static async createMultipleRecords(tableName: string, dataArray: CreateRecordData[]): Promise<AirtableRecord[]> {
     try {
-      const chunks = []
-      for (let i = 0; i < records.length; i += 10) {
-        chunks.push(records.slice(i, i + 10))
-      }
-
-      const results = []
-      for (const chunk of chunks) {
-        const chunkResults = await base(tableName).create(chunk)
-        results.push(...chunkResults)
-      }
-
-      return results
+      const recordsToCreate = dataArray.map(data => ({ fields: data }))
+      const records = await base(tableName).create(recordsToCreate)
+      
+      return records.map(record => ({
+        id: record.id,
+        fields: record.fields,
+        createdTime: record.get('createdTime') as string
+      }))
     } catch (error) {
-      console.error(`Error batch creating records in ${tableName}:`, error)
+      console.error(`Error creating multiple records in ${tableName}:`, error)
       throw error
     }
+  }
+
+  // Helper method to build filter formulas
+  static buildFilterFormula(conditions: Record<string, string | number>): string {
+    const formulas = Object.entries(conditions).map(([field, value]) => {
+      if (typeof value === 'string') {
+        return `{${field}} = "${value}"`
+      } else {
+        return `{${field}} = ${value}`
+      }
+    })
+    
+    return formulas.length > 1 ? `AND(${formulas.join(', ')})` : formulas[0]
   }
 }
