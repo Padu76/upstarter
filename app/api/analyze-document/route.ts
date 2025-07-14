@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Testo del documento mancante' }, { status: 400 })
     }
 
-    console.log('Analyzing document:', { fileName, textLength: text.length, userEmail: session.user.email })
+    console.log('Analyzing document:', { fileName, textLength: text.length, userEmail: session.user?.email })
 
     // Estrai informazioni strutturate dal testo
     const extractedInfo = await extractBusinessInfoSimple(text)
@@ -61,18 +61,18 @@ export async function POST(request: NextRequest) {
       type: 'professional',
       source: 'document_professional',
       source_file: fileName || 'Documento caricato',
-      user_email: session.user.email,
+      user_email: session.user?.email || '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
 
     // Salva progetto in localStorage per la dashboard
     const existingProjects = JSON.parse(localStorage.getItem('user_projects') || '[]')
-    const userProjects = existingProjects.filter((p: any) => p.user_email === session.user.email)
+    const userProjects = existingProjects.filter((p: any) => p.user_email === session.user?.email)
     userProjects.push(projectData)
     
     // Aggiorna tutti i progetti mantenendo quelli di altri utenti
-    const otherUsersProjects = existingProjects.filter((p: any) => p.user_email !== session.user.email)
+    const otherUsersProjects = existingProjects.filter((p: any) => p.user_email !== session.user?.email)
     const allProjects = [...otherUsersProjects, ...userProjects]
     
     // Salva in localStorage (simulazione database)
