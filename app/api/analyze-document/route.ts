@@ -90,63 +90,58 @@ export async function POST(request: NextRequest) {
 
 async function extractBusinessInfo(text: string): Promise<IdeaAnalysisInput | null> {
   try {
-    // Usa Claude per estrarre informazioni strutturate dal testo del documento
-    const prompt = `
-Analizza questo testo di presentazione di una startup e estrai le informazioni chiave in formato JSON.
-
-TESTO DEL DOCUMENTO:
-${text}
-
-Rispondi SOLO con un JSON valido in questo formato:
-
-{
-  "title": "Titolo/Nome della startup o progetto",
-  "description": "Descrizione breve del progetto (max 200 caratteri)",
-  "questionnaire": {
-    "target_market": "Chi sono i clienti target e qual è la dimensione del mercato",
-    "value_proposition": "Qual è il valore unico offerto e perché i clienti dovrebbero scegliere questo prodotto",
-    "business_model": "Come l'azienda genererà ricavi",
-    "competitive_advantage": "Qual è il vantaggio competitivo e cosa differenzia dai competitor",
-    "team_experience": "Esperienza e competenze del team",
-    "funding_needed": "Finanziamenti necessari e come verranno utilizzati",
-    "timeline": "Timeline di sviluppo e lancio del prodotto",
-    "main_challenges": "Principali sfide e rischi identificati"
-  }
-}
-
-Se alcune informazioni non sono presenti nel testo, usa "Non specificato" per quel campo.
-IMPORTANTE: Rispondi SOLO con il JSON, senza testo aggiuntivo.
-`
-
-    const anthropic = require('@anthropic-ai/sdk')
-    const client = new anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY
-    })
-
-    const message = await client.messages.create({
-      model: 'claude-3-sonnet-20240229',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: prompt }]
-    })
-
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
+    // Per ora, creiamo un'analisi semplificata dal testo
+    // In futuro qui andrà l'integrazione con Claude per l'estrazione strutturata
     
-    try {
-      const extractedInfo = JSON.parse(responseText) as IdeaAnalysisInput
-      
-      // Valida che abbiamo almeno title e description
-      if (!extractedInfo.title || !extractedInfo.description) {
-        throw new Error('Informazioni insufficienti estratte')
+    const lines = text.split('\n').filter(line => line.trim().length > 0)
+    const firstLine = lines[0] || 'Progetto Startup'
+    
+    // Estrae il titolo (prima riga o primi 50 caratteri)
+    const title = firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine
+    
+    // Usa i primi paragrafi come descrizione
+    const description = text.substring(0, 200).trim() + (text.length > 200 ? '...' : '')
+    
+    // Per ora, usiamo valori di default che l'utente può poi modificare
+    const extractedInfo: IdeaAnalysisInput = {
+      title: title,
+      description: description,
+      questionnaire: {
+        target_market: extractFromText(text, ['mercato', 'clienti', 'target', 'customers']) || 'Mercato da definire meglio',
+        value_proposition: extractFromText(text, ['valore', 'vantaggio', 'beneficio', 'value']) || 'Value proposition da sviluppare',
+        business_model: extractFromText(text, ['ricavi', 'monetizzazione', 'business model', 'prezzo']) || 'Modello di business da strutturare',
+        competitive_advantage: extractFromText(text, ['competitivo', 'differenziazione', 'unico', 'innovazione']) || 'Vantaggio competitivo da evidenziare',
+        team_experience: extractFromText(text, ['team', 'esperienza', 'competenze', 'fondatori']) || 'Esperienza del team da descrivere',
+        funding_needed: extractFromText(text, ['finanziamento', 'capitale', 'investimento', 'funding']) || 'Finanziamenti da quantificare',
+        timeline: extractFromText(text, ['tempo', 'sviluppo', 'roadmap', 'milestone']) || 'Timeline da pianificare',
+        main_challenges: extractFromText(text, ['sfide', 'rischi', 'difficoltà', 'ostacoli']) || 'Sfide principali da identificare'
       }
-      
-      return extractedInfo
-    } catch (parseError) {
-      console.error('Errore parsing JSON estratto:', parseError)
-      return null
     }
+    
+    return extractedInfo
 
   } catch (error) {
     console.error('Errore estrazione informazioni:', error)
     return null
   }
+}
+
+function extractFromText(text: string, keywords: string[]): string | null {
+  const lowerText = text.toLowerCase()
+  
+  for (const keyword of keywords) {
+    const index = lowerText.indexOf(keyword.toLowerCase())
+    if (index !== -1) {
+      // Prende il paragrafo che contiene la keyword
+      const start = Math.max(0, index - 100)
+      const end = Math.min(text.length, index + 200)
+      const extract = text.substring(start, end).trim()
+      
+      if (extract.length > 20) {
+        return extract
+      }
+    }
+  }
+  
+  return null
 }
