@@ -26,7 +26,6 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/pdf': ['.pdf'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'application/msword': ['.doc'],
       'text/plain': ['.txt']
@@ -85,8 +84,14 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
         throw new Error('Errore durante l\'analisi del documento')
       }
 
-      const analysis = await response.json()
-      onAnalysisComplete(analysis)
+      const result = await response.json()
+      
+      // Salva i dati dell'analisi in localStorage per il recupero
+      if (result.analysisData) {
+        localStorage.setItem(`analysis_${result.projectId}`, JSON.stringify(result.analysisData))
+      }
+
+      onAnalysisComplete(result)
 
     } catch (error) {
       console.error('Error analyzing document:', error)
@@ -106,8 +111,6 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
     const extension = fileName.split('.').pop()?.toLowerCase()
     
     switch (extension) {
-      case 'pdf':
-        return <File className="w-8 h-8 text-red-500" />
       case 'doc':
       case 'docx':
         return <FileText className="w-8 h-8 text-blue-500" />
@@ -126,7 +129,7 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
         </div>
         <div>
           <h3 className="text-xl font-semibold text-gray-900">Analizza Documento</h3>
-          <p className="text-gray-600">Carica un PDF, Word o file di testo con la presentazione del tuo progetto</p>
+          <p className="text-gray-600">Carica un file Word o di testo con la presentazione del tuo progetto</p>
         </div>
       </div>
 
@@ -148,12 +151,16 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
             Trascina e rilascia il tuo file o clicca per selezionarlo
           </p>
           <div className="flex flex-wrap justify-center gap-2 text-sm text-gray-400">
-            <span className="bg-gray-100 px-2 py-1 rounded">.PDF</span>
             <span className="bg-gray-100 px-2 py-1 rounded">.DOCX</span>
             <span className="bg-gray-100 px-2 py-1 rounded">.DOC</span>
             <span className="bg-gray-100 px-2 py-1 rounded">.TXT</span>
           </div>
           <p className="text-xs text-gray-400 mt-2">Max 10MB</p>
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Per file PDF:</strong> Convertili in formato Word (.docx) o copia il testo in un file .txt
+            </p>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
