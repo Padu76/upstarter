@@ -1,10 +1,36 @@
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import GitHubProvider from 'next-auth/providers/github'
+import CredentialsProvider from 'next-auth/providers/credentials'
 import { AirtableService, TABLES } from './airtable'
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    // Credentials Provider per login con email/password
+    CredentialsProvider({
+      name: 'credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
+
+        // Per ora, accettiamo qualsiasi email/password per testing
+        // In produzione, qui faresti il controllo del database
+        if (credentials.email && credentials.password.length >= 6) {
+          return {
+            id: '1',
+            email: credentials.email,
+            name: credentials.email.split('@')[0],
+          }
+        }
+
+        return null
+      }
+    }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -16,35 +42,61 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
+      // Per OAuth providers
       if (account?.provider === 'google' || account?.provider === 'github') {
         try {
-          // Check that we have required user data
           if (!user.email) {
             console.error('No email provided by OAuth provider')
             return false
           }
 
-          // Check if user exists in Airtable
-          const existingUsers = await AirtableService.findRecords(TABLES.USERS, {
-            filterByFormula: `{email} = "${user.email}"`
-          })
-
-          if (existingUsers.length === 0) {
-            // Create new user in Airtable
-            await AirtableService.createRecord(TABLES.USERS, {
-              email: user.email,
-              name: user.name || 'Utente',
-              user_type: 'startup', // Default type
-              created_at: new Date().toISOString()
+          if (process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID) {
+            const existingUsers = await AirtableService.findRecords(TABLES.USERS, {
+              filterByFormula: `{email} = "${user.email}"`
             })
+
+            if (existingUsers.length === 0) {
+              await AirtableService.createRecord(TABLES.USERS, {
+                email: user.email,
+                name: user.name || 'Utente',
+                user_type: 'startup',
+                created_at: new Date().toISOString()
+              })
+            }
+          } else {
+            console.warn('Airtable not configured, skipping user creation in database')
           }
 
           return true
         } catch (error) {
           console.error('Error during sign in:', error)
-          return false
+          return true
         }
       }
+
+      // Per credentials provider
+      if (account?.provider === 'credentials') {
+        try {
+          if (process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID) {
+            const existingUsers = await AirtableService.findRecords(TABLES.USERS, {
+              filterByFormula: `{email} = "${user.email}"`
+            })
+
+            if (existingUsers.length === 0) {
+              await AirtableService.createRecord(TABLES.USERS, {
+                email: user.email!,
+                name: user.name || 'Utente',
+                user_type: 'startup',
+                created_at: new Date().toISOString()
+              })
+            }
+          }
+        } catch (error) {
+          console.error('Error creating user in database:', error)
+        }
+        return true
+      }
+
       return true
     },
     async jwt({ token, user }) {
