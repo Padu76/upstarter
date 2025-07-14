@@ -10,8 +10,7 @@ import {
   Loader2, 
   Target, 
   Users, 
-  DollarSign, 
-  TrendingUp,
+  DollarSign,
   AlertCircle,
   Sparkles
 } from 'lucide-react'
@@ -134,11 +133,11 @@ export default function NewIdeaPage() {
         const result = await response.json()
         router.push(`/dashboard/projects/${result.project_id}`)
       } else {
-        throw new Error('Errore durante l\'analisi')
+        throw new Error('Errore durante l&apos;analisi')
       }
     } catch (error) {
       console.error('Errore:', error)
-      alert('Si è verificato un errore durante l\'analisi. Riprova.')
+      alert('Si è verificato un errore durante l&apos;analisi. Riprova.')
     } finally {
       setIsAnalyzing(false)
     }
@@ -305,7 +304,7 @@ export default function NewIdeaPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Analizza la Tua Idea</h1>
-            <p className="text-gray-600">L'AI di Claude analizzerà la tua startup idea e ti darà feedback dettagliato</p>
+            <p className="text-gray-600">L&apos;AI di Claude analizzerà la tua startup idea e ti darà feedback dettagliato</p>
           </div>
         </div>
       </div>
@@ -402,7 +401,7 @@ export default function NewIdeaPage() {
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-blue-900 mb-1">💡 Come funziona l'analisi AI</h3>
+            <h3 className="font-semibold text-blue-900 mb-1">💡 Come funziona l&apos;analisi AI</h3>
             <p className="text-sm text-blue-800">
               Claude AI analizzerà la tua idea utilizzando framework consolidati come il Business Model Canvas, 
               analisi SWOT e valutazione del mercato. Riceverai un report dettagliato con score, 
