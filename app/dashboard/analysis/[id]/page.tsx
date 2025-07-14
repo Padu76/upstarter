@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { 
   ArrowLeft, TrendingUp, AlertCircle, CheckCircle, Target, Users, DollarSign, Clock, 
   Download, Share, Star, ThumbsUp, ThumbsDown, Plus, Upload, FileText, 
-  AlertTriangle, Info, Lightbulb, PresentationChart, FileCheck, Edit3, 
+  AlertTriangle, Info, Lightbulb, Presentation, FileCheck, Edit3, 
   MessageSquare, BookOpen, TrendingDown, Eye, EyeOff
 } from 'lucide-react'
 
@@ -652,7 +652,7 @@ export default function AnalysisPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <PresentationChart className="w-5 h-5" />
+                        <Presentation className="w-5 h-5" />
                         Preparazione Pitch Deck
                       </h3>
                       <p className="text-gray-600 text-sm">Focus su validazione concept e primo interesse investitori</p>
