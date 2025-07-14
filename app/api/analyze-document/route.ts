@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     // Genera un ID temporaneo
     let projectId = `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
-    // Crea oggetto progetto
+    // Crea oggetto progetto per il client
     const projectData = {
       id: projectId,
       title: extractedInfo.title,
@@ -66,23 +66,6 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString()
     }
 
-    // Salva progetto in localStorage per la dashboard
-    const existingProjects = JSON.parse(localStorage.getItem('user_projects') || '[]')
-    const userProjects = existingProjects.filter((p: any) => p.user_email === session.user?.email)
-    userProjects.push(projectData)
-    
-    // Aggiorna tutti i progetti mantenendo quelli di altri utenti
-    const otherUsersProjects = existingProjects.filter((p: any) => p.user_email !== session.user?.email)
-    const allProjects = [...otherUsersProjects, ...userProjects]
-    
-    // Salva in localStorage (simulazione database)
-    try {
-      localStorage.setItem('user_projects', JSON.stringify(allProjects))
-      console.log('Project saved to localStorage')
-    } catch (storageError) {
-      console.error('Error saving to localStorage:', storageError)
-    }
-
     // Salva temporaneamente i dati dell'analisi per il recupero
     const analysisData = {
       id: projectId,
@@ -93,13 +76,7 @@ export async function POST(request: NextRequest) {
       type: 'professional'
     }
 
-    // Salva analisi dettagliata
-    try {
-      localStorage.setItem(`analysis_${projectId}`, JSON.stringify(analysisData))
-    } catch (storageError) {
-      console.error('Error saving analysis to localStorage:', storageError)
-    }
-
+    // Restituisci tutto al client che gestirà il salvataggio in localStorage
     return NextResponse.json({
       success: true,
       analysis: analysis,
@@ -107,8 +84,8 @@ export async function POST(request: NextRequest) {
       projectId,
       fileName,
       analysisData,
-      type: 'professional',
-      projectSaved: true
+      projectData, // Nuovo: dati del progetto per il salvataggio client-side
+      type: 'professional'
     })
 
   } catch (error) {
