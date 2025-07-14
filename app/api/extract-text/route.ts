@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import * as pdfParse from 'pdf-parse'
+import pdfParse from 'pdf-parse'
 import * as mammoth from 'mammoth'
 
 export async function POST(request: NextRequest) {
