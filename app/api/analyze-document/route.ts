@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Testo del documento mancante' }, { status: 400 })
     }
 
-    console.log('Analyzing document:', { fileName, textLength: text.length })
+    console.log('Analyzing document:', { fileName, textLength: text.length, userEmail: session.user.email })
 
     // Estrai informazioni strutturate dal testo
     const extractedInfo = await extractBusinessInfoSimple(text)
@@ -51,7 +51,39 @@ export async function POST(request: NextRequest) {
     // Genera un ID temporaneo
     let projectId = `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
-    // Salva temporaneamente i dati in localStorage per il recupero
+    // Crea oggetto progetto
+    const projectData = {
+      id: projectId,
+      title: extractedInfo.title,
+      description: extractedInfo.description,
+      score: analysis.overall_score,
+      status: 'analyzed',
+      type: 'professional',
+      source: 'document_professional',
+      source_file: fileName || 'Documento caricato',
+      user_email: session.user.email,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    // Salva progetto in localStorage per la dashboard
+    const existingProjects = JSON.parse(localStorage.getItem('user_projects') || '[]')
+    const userProjects = existingProjects.filter((p: any) => p.user_email === session.user.email)
+    userProjects.push(projectData)
+    
+    // Aggiorna tutti i progetti mantenendo quelli di altri utenti
+    const otherUsersProjects = existingProjects.filter((p: any) => p.user_email !== session.user.email)
+    const allProjects = [...otherUsersProjects, ...userProjects]
+    
+    // Salva in localStorage (simulazione database)
+    try {
+      localStorage.setItem('user_projects', JSON.stringify(allProjects))
+      console.log('Project saved to localStorage')
+    } catch (storageError) {
+      console.error('Error saving to localStorage:', storageError)
+    }
+
+    // Salva temporaneamente i dati dell'analisi per il recupero
     const analysisData = {
       id: projectId,
       analysis: analysis,
@@ -61,6 +93,13 @@ export async function POST(request: NextRequest) {
       type: 'professional'
     }
 
+    // Salva analisi dettagliata
+    try {
+      localStorage.setItem(`analysis_${projectId}`, JSON.stringify(analysisData))
+    } catch (storageError) {
+      console.error('Error saving analysis to localStorage:', storageError)
+    }
+
     return NextResponse.json({
       success: true,
       analysis: analysis,
@@ -68,7 +107,8 @@ export async function POST(request: NextRequest) {
       projectId,
       fileName,
       analysisData,
-      type: 'professional'
+      type: 'professional',
+      projectSaved: true
     })
 
   } catch (error) {
