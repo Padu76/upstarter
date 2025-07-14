@@ -131,7 +131,7 @@ IMPORTANTE: Rispondi SOLO con il JSON, senza testo aggiuntivo.
       }
       
       return analysis
-    } catch (parseError) {
+    } catch {
       console.error('Failed to parse Claude response:', responseText)
       
       // Return a fallback analysis if parsing fails
