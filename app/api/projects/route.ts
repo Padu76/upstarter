@@ -6,121 +6,100 @@ import { AirtableService, TABLES } from '@/lib/airtable'
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
+    // Get user from Airtable
+    const users = await AirtableService.findRecords(TABLES.USERS, {
+      filterByFormula: `{email} = "${session.user.email}"`
+    })
 
-    let filterFormula = `{user_id} = "${session.user.id}"`
-    if (status) {
-      filterFormula += ` AND {status} = "${status}"`
+    if (users.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const projects = await AirtableService.find(TABLES.PROJECTS, {
-      filterByFormula: filterFormula,
+    const userId = users[0].id
+
+    // Get user's projects
+    const projects = await AirtableService.findRecords(TABLES.PROJECTS, {
+      filterByFormula: `{user_id} = "${userId}"`,
       sort: [{ field: 'created_at', direction: 'desc' }]
     })
 
-    return NextResponse.json({ projects })
+    return NextResponse.json({
+      success: true,
+      projects: projects.map(project => ({
+        id: project.id,
+        title: project.fields.title,
+        description: project.fields.description,
+        status: project.fields.status,
+        score: project.fields.score,
+        created_at: project.fields.created_at,
+        updated_at: project.fields.updated_at
+      }))
+    })
+
   } catch (error) {
-    console.error('Error fetching projects:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('API error:', error)
+    return NextResponse.json({
+      error: 'Internal server error'
+    }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
-    const { title, description, tags, status = 'draft' } = body
+    const { title, description } = body
 
-    // Validate input
     if (!title || !description) {
-      return NextResponse.json(
-        { error: 'Title and description are required' }, 
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const project = await AirtableService.create(TABLES.PROJECTS, {
-      user_id: session.user.id,
+    // Get user from Airtable
+    const users = await AirtableService.findRecords(TABLES.USERS, {
+      filterByFormula: `{email} = "${session.user.email}"`
+    })
+
+    if (users.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const userId = users[0].id
+
+    // Create project
+    const project = await AirtableService.createRecord(TABLES.PROJECTS, {
+      user_id: userId,
       title,
       description,
-      tags: tags || [],
-      status,
+      status: 'draft',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })
 
-    return NextResponse.json({ success: true, project })
-  } catch (error) {
-    console.error('Error creating project:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await request.json()
-    const { id, title, description, tags, status } = body
-
-    // Verify ownership
-    const existingProject = await AirtableService.getById(TABLES.PROJECTS, id)
-    if (existingProject.user_id !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    const updatedProject = await AirtableService.update(TABLES.PROJECTS, id, {
-      title,
-      description,
-      tags,
-      status,
-      updated_at: new Date().toISOString()
+    return NextResponse.json({
+      success: true,
+      project: {
+        id: project.id,
+        title: project.fields.title,
+        description: project.fields.description,
+        status: project.fields.status,
+        score: project.fields.score,
+        created_at: project.fields.created_at,
+        updated_at: project.fields.updated_at
+      }
     })
 
-    return NextResponse.json({ success: true, project: updatedProject })
   } catch (error) {
-    console.error('Error updating project:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
-
-    if (!id) {
-      return NextResponse.json({ error: 'Project ID required' }, { status: 400 })
-    }
-
-    // Verify ownership
-    const existingProject = await AirtableService.getById(TABLES.PROJECTS, id)
-    if (existingProject.user_id !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    await AirtableService.delete(TABLES.PROJECTS, id)
-
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error deleting project:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('API error:', error)
+    return NextResponse.json({
+      error: 'Internal server error'
+    }, { status: 500 })
   }
 }
