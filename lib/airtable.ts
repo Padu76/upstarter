@@ -1,4 +1,4 @@
-import Airtable from 'airtable'
+import Airtable, { FieldSet, Record } from 'airtable'
 
 // Initialize Airtable
 const base = new Airtable({
@@ -23,12 +23,8 @@ export const TABLES = {
 // Type definitions for better type safety
 interface AirtableRecord {
   id: string
-  fields: Record<string, unknown>
+  fields: FieldSet
   createdTime: string
-}
-
-interface CreateRecordData {
-  [key: string]: unknown
 }
 
 interface FindRecordsOptions {
@@ -40,9 +36,9 @@ interface FindRecordsOptions {
 
 export class AirtableService {
   // Create a new record
-  static async createRecord(tableName: string, data: CreateRecordData): Promise<AirtableRecord> {
+  static async createRecord(tableName: string, data: FieldSet): Promise<AirtableRecord> {
     try {
-      const records = await base(tableName).create([{ fields: data }])
+      const records = await base(tableName).create([data])
       return {
         id: records[0].id,
         fields: records[0].fields,
@@ -97,7 +93,7 @@ export class AirtableService {
   }
 
   // Update a record
-  static async updateRecord(tableName: string, recordId: string, data: CreateRecordData): Promise<AirtableRecord> {
+  static async updateRecord(tableName: string, recordId: string, data: FieldSet): Promise<AirtableRecord> {
     try {
       const records = await base(tableName).update([
         {
@@ -129,10 +125,9 @@ export class AirtableService {
   }
 
   // Batch operations
-  static async createMultipleRecords(tableName: string, dataArray: CreateRecordData[]): Promise<AirtableRecord[]> {
+  static async createMultipleRecords(tableName: string, dataArray: FieldSet[]): Promise<AirtableRecord[]> {
     try {
-      const recordsToCreate = dataArray.map(data => ({ fields: data }))
-      const records = await base(tableName).create(recordsToCreate)
+      const records = await base(tableName).create(dataArray)
       
       return records.map(record => ({
         id: record.id,
