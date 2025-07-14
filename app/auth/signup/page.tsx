@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
-import { Rocket, Mail, Github, ArrowRight, Loader2, User, Building } from 'lucide-react'
+import { Rocket, Github, Loader2, User, Building, CheckCircle } from 'lucide-react'
 
 export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -50,7 +50,7 @@ export default function SignUpPage() {
             >
               <User className="w-6 h-6 mx-auto mb-2" />
               <div className="text-sm font-medium">Startupper</div>
-              <div className="text-xs text-gray-500">Ho un'idea o progetto</div>
+              <div className="text-xs text-gray-500">Ho un&apos;idea o progetto</div>
             </button>
             <button
               onClick={() => setUserType('investor')}
