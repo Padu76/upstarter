@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pdfParse from 'pdf-parse'
 import * as mammoth from 'mammoth'
 
 export async function POST(request: NextRequest) {
@@ -17,13 +16,16 @@ export async function POST(request: NextRequest) {
 
     try {
       if (fileName.endsWith('.pdf')) {
-        // Estrai testo da PDF
-        const pdfData = await pdfParse(buffer)
-        extractedText = pdfData.text
+        // Per ora, chiediamo di convertire PDF in testo o DOCX
+        return NextResponse.json({ 
+          error: 'Per file PDF, ti consigliamo di:\n1. Copiare il testo e incollarlo in un file .txt\n2. Convertire il PDF in formato .docx\n3. Usare il form manuale per inserire le informazioni' 
+        }, { status: 400 })
+        
       } else if (fileName.endsWith('.docx')) {
         // Estrai testo da DOCX
         const result = await mammoth.extractRawText({ buffer })
         extractedText = result.value
+        
       } else if (fileName.endsWith('.doc')) {
         // Per i file .doc, proviamo con mammoth (supporto limitato)
         try {
@@ -34,12 +36,14 @@ export async function POST(request: NextRequest) {
             error: 'Formato .doc non supportato completamente. Prova a salvare come .docx' 
           }, { status: 400 })
         }
+        
       } else if (fileName.endsWith('.txt')) {
         // Estrai testo da file di testo
         extractedText = buffer.toString('utf-8')
+        
       } else {
         return NextResponse.json({ 
-          error: 'Formato file non supportato. Usa PDF, DOCX o TXT' 
+          error: 'Formato file supportato: .DOCX, .TXT. Per PDF convertire in DOCX o copiare il testo.' 
         }, { status: 400 })
       }
 
