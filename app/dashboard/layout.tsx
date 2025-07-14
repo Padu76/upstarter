@@ -15,7 +15,8 @@ import {
   Menu, 
   X,
   User,
-  Home
+  Home,
+  ExternalLink
 } from 'lucide-react'
 
 const navigation = [
@@ -43,12 +44,12 @@ export default function DashboardLayout({
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white shadow-xl">
           <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <div className="p-2 bg-blue-600 rounded-lg">
                 <Rocket className="w-6 h-6 text-white" />
               </div>
               <span className="text-xl font-bold text-gray-900">UpStarter</span>
-            </div>
+            </Link>
             <button
               onClick={() => setSidebarOpen(false)}
               className="p-2 text-gray-400 hover:text-gray-600"
@@ -56,6 +57,19 @@ export default function DashboardLayout({
               <X className="w-6 h-6" />
             </button>
           </div>
+          
+          {/* Home Link */}
+          <div className="px-4 py-3 border-b border-gray-200">
+            <Link
+              href="/"
+              className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <ExternalLink className="w-5 h-5" />
+              Torna alla Home
+            </Link>
+          </div>
+
           <nav className="flex-1 px-4 py-6 space-y-2">
             {navigation.map((item) => {
               const isActive = pathname === item.href
@@ -78,7 +92,7 @@ export default function DashboardLayout({
           </nav>
           <div className="border-t border-gray-200 p-4">
             <button
-              onClick={() => signOut()}
+              onClick={() => signOut({ callbackUrl: '/' })}
               className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >
               <LogOut className="w-5 h-5" />
@@ -91,12 +105,24 @@ export default function DashboardLayout({
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white border-r border-gray-200 px-6 py-6">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="p-2 bg-blue-600 rounded-lg">
               <Rocket className="w-6 h-6 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-900">UpStarter</span>
+          </Link>
+
+          {/* Home Link Desktop */}
+          <div className="border-b border-gray-200 pb-4">
+            <Link
+              href="/"
+              className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ExternalLink className="w-5 h-5" />
+              Torna alla Home
+            </Link>
           </div>
+
           <nav className="flex flex-1 flex-col">
             <ul className="flex flex-1 flex-col gap-y-2">
               {navigation.map((item) => {
@@ -133,7 +159,7 @@ export default function DashboardLayout({
                 </div>
               </div>
               <button
-                onClick={() => signOut()}
+                onClick={() => signOut({ callbackUrl: '/' })}
                 className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               >
                 <LogOut className="w-5 h-5" />
@@ -155,12 +181,12 @@ export default function DashboardLayout({
           >
             <Menu className="h-6 w-6" />
           </button>
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="p-1.5 bg-blue-600 rounded-lg">
               <Rocket className="w-4 h-4 text-white" />
             </div>
             <span className="text-lg font-bold text-gray-900">UpStarter</span>
-          </div>
+          </Link>
         </div>
 
         <main className="p-4 lg:p-8">
