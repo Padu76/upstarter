@@ -2,13 +2,15 @@
 
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, FileText, File, X, Loader, CheckCircle, AlertCircle } from 'lucide-react'
+import { useSession, signIn } from 'next-auth/react'
+import { Upload, FileText, File, X, Loader, CheckCircle, AlertCircle, LogIn } from 'lucide-react'
 
 interface DocumentAnalyzerProps {
   onAnalysisComplete: (analysis: any) => void
 }
 
 export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyzerProps) {
+  const { data: session, status } = useSession()
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [extractedText, setExtractedText] = useState('')
@@ -65,6 +67,17 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
   const analyzeExtractedText = async () => {
     if (!extractedText) return
 
+    // Check auth status before proceeding
+    if (status === 'loading') {
+      setError('Verifica dello stato di autenticazione in corso...')
+      return
+    }
+
+    if (!session) {
+      setError('Devi essere autenticato per analizzare documenti')
+      return
+    }
+
     setIsAnalyzing(true)
     setError('')
 
@@ -80,8 +93,13 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
         })
       })
 
+      if (response.status === 401) {
+        throw new Error('Sessione scaduta. Effettua nuovamente il login.')
+      }
+
       if (!response.ok) {
-        throw new Error('Errore durante l\'analisi del documento')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Errore durante l\'analisi del documento')
       }
 
       const result = await response.json()
@@ -95,7 +113,13 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
 
     } catch (error) {
       console.error('Error analyzing document:', error)
-      setError('Errore durante l\'analisi del documento')
+      const errorMessage = error instanceof Error ? error.message : 'Errore durante l\'analisi del documento'
+      setError(errorMessage)
+      
+      // Se è un errore di autenticazione, suggerisci il re-login
+      if (errorMessage.includes('Sessione scaduta') || errorMessage.includes('Non autorizzato')) {
+        setError('Sessione scaduta. Clicca qui per effettuare nuovamente il login.')
+      }
     } finally {
       setIsAnalyzing(false)
     }
@@ -121,6 +145,41 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
     }
   }
 
+  // Show login requirement if not authenticated
+  if (status === 'unauthenticated') {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="text-center py-8">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <LogIn className="w-8 h-8 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Login Richiesto</h3>
+          <p className="text-gray-600 mb-6">
+            Devi essere autenticato per analizzare documenti
+          </p>
+          <button
+            onClick={() => signIn()}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+          >
+            Accedi
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading if session is loading
+  if (status === 'loading') {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="text-center py-8">
+          <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Verifica autenticazione...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex items-center gap-3 mb-6">
@@ -132,6 +191,18 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
           <p className="text-gray-600">Carica un file Word o di testo con la presentazione del tuo progetto</p>
         </div>
       </div>
+
+      {/* Auth Status Indicator */}
+      {session && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <span className="text-green-800 text-sm">
+              Autenticato come: {session.user?.email}
+            </span>
+          </div>
+        </div>
+      )}
 
       {!uploadedFile ? (
         <div
@@ -200,9 +271,19 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
 
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-red-600 text-sm">{error}</p>
+                {error.includes('Sessione scaduta') && (
+                  <button
+                    onClick={() => signIn()}
+                    className="mt-2 bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition-colors"
+                  >
+                    Effettua Login
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
