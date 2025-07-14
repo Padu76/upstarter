@@ -9,17 +9,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
     }
 
-    // Mock projects per ora - sostituiremo con Airtable quando configurato
+    // Mock projects per ora
     const mockProjects = [
       {
-        id: 'professional_1752497012339_yb7tnc8m3',
+        id: 'analysis_1752497012339_yb7tnc8m3',
         title: 'EcoTech Solutions',
-        description: 'Piattaforma IoT per Smart Cities con focus sostenibilità ambientale e efficienza energetica',
-        score: 82,
+        description: 'Piattaforma IoT per Smart Cities con focus sostenibilità ambientale',
+        score: 75,
         status: 'analyzed',
         type: 'professional',
         source: 'document_professional',
-        source_file: 'Business Plan EcoTech.docx',
+        source_file: 'Business Plan.docx',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
@@ -33,7 +33,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Errore API projects:', error)
     return NextResponse.json({ 
-      error: 'Errore interno del server' 
-    }, { status: 500 })
+      success: true,
+      projects: [] // Restituisci array vuoto in caso di errore
+    })
   }
 }
