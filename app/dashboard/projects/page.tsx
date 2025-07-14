@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, BarChart3, Clock, CheckCircle, Loader } from 'lucide-react'
+import { ArrowLeft, Plus, BarChart3, Clock, CheckCircle, Loader, Trash2, Eye, Calendar } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 
 interface Project {
@@ -14,51 +15,69 @@ interface Project {
   type: string
   source: string
   source_file?: string
+  user_email: string
   created_at: string
   updated_at: string
 }
 
 export default function ProjectsPage() {
   const router = useRouter()
+  const { data: session } = useSession()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    loadProjects()
-  }, [])
+    if (session?.user?.email) {
+      loadUserProjects()
+    }
+  }, [session])
 
-  const loadProjects = async () => {
+  const loadUserProjects = () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/projects')
       
-      if (!response.ok) {
-        throw new Error('Errore caricamento progetti')
-      }
-
-      const data = await response.json()
-      setProjects(data.projects || [])
+      // Carica progetti dell'utente da localStorage
+      const allProjects = JSON.parse(localStorage.getItem('user_projects') || '[]')
+      const userProjects = allProjects.filter((project: Project) => 
+        project.user_email === session?.user?.email
+      )
+      
+      // Ordina per data di creazione (più recenti prima)
+      const sortedProjects = userProjects.sort((a: Project, b: Project) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+      
+      setProjects(sortedProjects)
+      console.log('Loaded projects for user:', session?.user?.email, sortedProjects.length)
+      
     } catch (error) {
-      console.error('Errore:', error)
+      console.error('Errore caricamento progetti:', error)
       setError('Errore nel caricamento dei progetti')
-      // Fallback ai mock data
-      setProjects([
-        {
-          id: 'professional_1752497012339_yb7tnc8m3',
-          title: 'EcoTech Solutions',
-          description: 'Piattaforma IoT per Smart Cities con focus sostenibilità',
-          score: 82,
-          status: 'analyzed',
-          type: 'professional',
-          source: 'document_professional',
-          source_file: 'Business Plan EcoTech.docx',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ])
+      setProjects([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const deleteProject = (projectId: string) => {
+    try {
+      // Rimuovi da localStorage
+      const allProjects = JSON.parse(localStorage.getItem('user_projects') || '[]')
+      const updatedProjects = allProjects.filter((project: Project) => project.id !== projectId)
+      localStorage.setItem('user_projects', JSON.stringify(updatedProjects))
+      
+      // Rimuovi anche l'analisi dettagliata
+      localStorage.removeItem(`analysis_${projectId}`)
+      localStorage.removeItem(`additional_info_${projectId}`)
+      
+      // Aggiorna stato locale
+      setProjects(projects.filter(project => project.id !== projectId))
+      
+      console.log('Project deleted:', projectId)
+    } catch (error) {
+      console.error('Errore eliminazione progetto:', error)
+      setError('Errore durante l\'eliminazione del progetto')
     }
   }
 
@@ -80,6 +99,23 @@ export default function ProjectsPage() {
     }
   }
 
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-600'
+    if (score >= 60) return 'text-orange-600'
+    return 'text-red-600'
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('it-IT', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -97,22 +133,36 @@ export default function ProjectsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">I Miei Progetti</h1>
-          <p className="text-gray-600 mt-1">Gestisci e monitora le tue analisi startup</p>
+          <p className="text-gray-600 mt-1">
+            Gestisci e monitora le tue analisi startup
+            {session?.user?.email && (
+              <span className="text-sm ml-2 text-blue-600">({session.user.email})</span>
+            )}
+          </p>
           {error && (
-            <p className="text-orange-600 text-sm mt-1">⚠️ {error} (mostrando dati di esempio)</p>
+            <p className="text-red-600 text-sm mt-1">⚠️ {error}</p>
           )}
         </div>
-        <Link
-          href="/dashboard/new-idea"
-          className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-        >
-          <Plus className="w-5 h-5" />
-          Nuova Analisi
-        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={loadUserProjects}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+          >
+            <Clock className="w-4 h-4" />
+            Aggiorna
+          </button>
+          <Link
+            href="/dashboard/new-idea"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+          >
+            <Plus className="w-5 h-5" />
+            Nuova Analisi
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -152,31 +202,44 @@ export default function ProjectsPage() {
             </div>
           </div>
         </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Calendar className="w-6 h-6 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Ultimo Progetto</p>
+              <p className="text-sm font-bold text-gray-900">
+                {projects.length > 0 ? formatDate(projects[0].created_at).split(',')[0] : 'Nessuno'}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Projects List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Progetti Recenti</h2>
-            <button
-              onClick={loadProjects}
-              className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-            >
-              Aggiorna
-            </button>
+            <h2 className="text-xl font-semibold text-gray-900">I Tuoi Progetti</h2>
+            {projects.length > 0 && (
+              <span className="text-sm text-gray-500">
+                {projects.length} progetto{projects.length !== 1 ? 'i' : ''}
+              </span>
+            )}
           </div>
         </div>
 
         <div className="p-6">
           {projects.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="w-8 h-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Nessun progetto ancora</h3>
-              <p className="text-gray-600 mb-4">
-                Inizia analizzando la tua prima idea startup
+              <p className="text-gray-600 mb-6">
+                Inizia analizzando la tua prima idea startup caricando un documento o compilando il questionario
               </p>
               <Link
                 href="/dashboard/new-idea"
@@ -203,11 +266,11 @@ export default function ProjectsPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-gray-600 text-sm mb-3">{project.description}</p>
+                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">{project.description}</p>
                       <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span>Score: <span className="font-medium text-blue-600">{project.score}%</span></span>
+                        <span>Score: <span className={`font-medium ${getScoreColor(project.score)}`}>{project.score}%</span></span>
                         <span>•</span>
-                        <span>{new Date(project.created_at).toLocaleDateString('it-IT')}</span>
+                        <span>{formatDate(project.created_at)}</span>
                         {project.source_file && (
                           <>
                             <span>•</span>
@@ -218,15 +281,31 @@ export default function ProjectsPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-gray-900">{project.score}</div>
+                        <div className={`text-2xl font-bold ${getScoreColor(project.score)}`}>
+                          {project.score}
+                        </div>
                         <div className="text-xs text-gray-500">Score</div>
                       </div>
-                      <Link
-                        href={`/dashboard/analysis/${project.id}`}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm"
-                      >
-                        Vedi Analisi
-                      </Link>
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/dashboard/analysis/${project.id}`}
+                          className="flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Vedi
+                        </Link>
+                        <button
+                          onClick={() => {
+                            if (confirm('Sei sicuro di voler eliminare questo progetto?')) {
+                              deleteProject(project.id)
+                            }
+                          }}
+                          className="flex items-center gap-1 border border-red-300 text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors font-semibold text-sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Elimina
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -235,6 +314,47 @@ export default function ProjectsPage() {
           )}
         </div>
       </div>
+
+      {/* Quick Actions */}
+      {projects.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <h3 className="font-semibold text-blue-900 mb-3">🚀 Prossimi Passi</h3>
+          <div className="grid md:grid-cols-3 gap-4">
+            <Link
+              href="/dashboard/new-idea"
+              className="flex items-center gap-3 p-4 bg-white border border-blue-200 rounded-lg hover:border-blue-300 transition-colors"
+            >
+              <Plus className="w-5 h-5 text-blue-600" />
+              <div>
+                <div className="font-medium text-gray-900">Nuova Analisi</div>
+                <div className="text-sm text-gray-600">Analizza un'altra idea</div>
+              </div>
+            </Link>
+            
+            <Link
+              href="/dashboard/teamup"
+              className="flex items-center gap-3 p-4 bg-white border border-blue-200 rounded-lg hover:border-blue-300 transition-colors"
+            >
+              <CheckCircle className="w-5 h-5 text-blue-600" />
+              <div>
+                <div className="font-medium text-gray-900">Trova Co-founder</div>
+                <div className="text-sm text-gray-600">Completa il team</div>
+              </div>
+            </Link>
+            
+            <Link
+              href="/dashboard/investors"
+              className="flex items-center gap-3 p-4 bg-white border border-blue-200 rounded-lg hover:border-blue-300 transition-colors"
+            >
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              <div>
+                <div className="font-medium text-gray-900">Cerca Investitori</div>
+                <div className="text-sm text-gray-600">Trova finanziamenti</div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
