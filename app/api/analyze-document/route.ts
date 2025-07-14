@@ -29,8 +29,10 @@ export async function POST(request: NextRequest) {
     // Analizza l'idea usando le informazioni estratte
     const analysis = await analyzeIdea(extractedInfo)
 
+    // Genera un ID temporaneo se Airtable non è disponibile
+    let projectId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
     // Salva il progetto e l'analisi nel database (se Airtable è configurato)
-    let projectId = null
     if (process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID) {
       try {
         // Trova l'utente
@@ -68,8 +70,17 @@ export async function POST(request: NextRequest) {
         }
       } catch (dbError) {
         console.error('Errore salvando nel database:', dbError)
-        // Continuiamo anche se il salvataggio fallisce
+        // Manteniamo l'ID temporaneo se il database fallisce
       }
+    }
+
+    // Salva temporaneamente i dati in localStorage per il recupero
+    const analysisData = {
+      id: projectId,
+      analysis,
+      extractedInfo,
+      fileName,
+      timestamp: new Date().toISOString()
     }
 
     return NextResponse.json({
@@ -77,7 +88,8 @@ export async function POST(request: NextRequest) {
       analysis,
       extractedInfo,
       projectId,
-      fileName
+      fileName,
+      analysisData // Questo può essere usato dal frontend per salvare in localStorage
     })
 
   } catch (error) {
