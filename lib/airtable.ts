@@ -1,4 +1,4 @@
-import Airtable, { FieldSet, Record } from 'airtable'
+import Airtable, { FieldSet } from 'airtable'
 
 // Initialize Airtable
 const base = new Airtable({
@@ -141,7 +141,7 @@ export class AirtableService {
   }
 
   // Helper method to build filter formulas
-  static buildFilterFormula(conditions: Record<string, string | number>): string {
+  static buildFilterFormula(conditions: { [key: string]: string | number }): string {
     const formulas = Object.entries(conditions).map(([field, value]) => {
       if (typeof value === 'string') {
         return `{${field}} = "${value}"`
