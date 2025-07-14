@@ -1,25 +1,66 @@
 'use client'
 
-import { ArrowLeft, Plus, BarChart3, Clock, CheckCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ArrowLeft, Plus, BarChart3, Clock, CheckCircle, Loader } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
+interface Project {
+  id: string
+  title: string
+  description: string
+  score: number
+  status: string
+  type: string
+  source: string
+  source_file?: string
+  created_at: string
+  updated_at: string
+}
+
 export default function ProjectsPage() {
   const router = useRouter()
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  // Mock projects data
-  const projects = [
-    {
-      id: 'professional_1752497012339_yb7tnc8m3',
-      title: 'EcoTech Solutions',
-      description: 'Piattaforma IoT per Smart Cities con focus sostenibilità',
-      score: 82,
-      status: 'analyzed',
-      type: 'professional',
-      createdAt: '2025-01-14T13:30:00Z',
-      fileName: 'Business Plan EcoTech.docx'
+  useEffect(() => {
+    loadProjects()
+  }, [])
+
+  const loadProjects = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/projects')
+      
+      if (!response.ok) {
+        throw new Error('Errore caricamento progetti')
+      }
+
+      const data = await response.json()
+      setProjects(data.projects || [])
+    } catch (error) {
+      console.error('Errore:', error)
+      setError('Errore nel caricamento dei progetti')
+      // Fallback ai mock data
+      setProjects([
+        {
+          id: 'professional_1752497012339_yb7tnc8m3',
+          title: 'EcoTech Solutions',
+          description: 'Piattaforma IoT per Smart Cities con focus sostenibilità',
+          score: 82,
+          status: 'analyzed',
+          type: 'professional',
+          source: 'document_professional',
+          source_file: 'Business Plan EcoTech.docx',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ])
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -39,6 +80,17 @@ export default function ProjectsPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Caricamento progetti...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -46,6 +98,9 @@ export default function ProjectsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">I Miei Progetti</h1>
           <p className="text-gray-600 mt-1">Gestisci e monitora le tue analisi startup</p>
+          {error && (
+            <p className="text-orange-600 text-sm mt-1">⚠️ {error} (mostrando dati di esempio)</p>
+          )}
         </div>
         <Link
           href="/dashboard/new-idea"
@@ -102,7 +157,15 @@ export default function ProjectsPage() {
       {/* Projects List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Progetti Recenti</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Progetti Recenti</h2>
+            <button
+              onClick={loadProjects}
+              className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+            >
+              Aggiorna
+            </button>
+          </div>
         </div>
 
         <div className="p-6">
@@ -144,11 +207,11 @@ export default function ProjectsPage() {
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <span>Score: <span className="font-medium text-blue-600">{project.score}%</span></span>
                         <span>•</span>
-                        <span>{new Date(project.createdAt).toLocaleDateString('it-IT')}</span>
-                        {project.fileName && (
+                        <span>{new Date(project.created_at).toLocaleDateString('it-IT')}</span>
+                        {project.source_file && (
                           <>
                             <span>•</span>
-                            <span>📄 {project.fileName}</span>
+                            <span>📄 {project.source_file}</span>
                           </>
                         )}
                       </div>
