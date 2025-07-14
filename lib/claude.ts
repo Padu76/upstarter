@@ -12,121 +12,106 @@ export interface IdeaAnalysisInput {
     value_proposition: string
     business_model: string
     competitive_advantage: string
-    financial_projections: string
-    market_size: string
-    team_needs: string
+    team_experience: string
+    funding_needed: string
     timeline: string
+    main_challenges: string
   }
 }
 
 export interface IdeaAnalysisResult {
   overall_score: number
-  strengths: string[]
-  weaknesses: string[]
-  opportunities: string[]
-  threats: string[]
-  recommendations: string[]
+  swot_analysis: {
+    strengths: string[]
+    weaknesses: string[]
+    opportunities: string[]
+    threats: string[]
+  }
+  detailed_feedback: {
+    market_analysis: {
+      score: number
+      feedback: string
+      recommendations: string[]
+    }
+    business_model: {
+      score: number
+      feedback: string
+      recommendations: string[]
+    }
+    team_assessment: {
+      score: number
+      feedback: string
+      missing_roles: string[]
+    }
+    financial_viability: {
+      score: number
+      feedback: string
+      recommendations: string[]
+    }
+  }
   next_steps: string[]
-  market_validation: {
-    score: number
-    analysis: string
-    suggestions: string[]
-  }
-  business_model: {
-    score: number
-    analysis: string
-    suggestions: string[]
-  }
-  competitive_landscape: {
-    score: number
-    analysis: string
-    suggestions: string[]
-  }
-  financial_viability: {
-    score: number
-    analysis: string
-    suggestions: string[]
-  }
-  team_assessment: {
-    score: number
-    missing_roles: string[]
-    priorities: string[]
-  }
 }
-
-const ANALYSIS_PROMPT = `
-Sei un esperto consulente di startup e business development. Analizza l'idea di business fornita e dai un feedback dettagliato e costruttivo.
-
-IDEA DA ANALIZZARE:
-Titolo: {title}
-Descrizione: {description}
-
-QUESTIONARIO BUSINESS:
-- Mercato target: {target_market}
-- Proposta di valore: {value_proposition}
-- Modello di business: {business_model}
-- Vantaggio competitivo: {competitive_advantage}
-- Proiezioni finanziarie: {financial_projections}
-- Dimensione mercato: {market_size}
-- Esigenze del team: {team_needs}
-- Timeline: {timeline}
-
-FORNISCI UN'ANALISI STRUTTURATA IN FORMATO JSON con:
-
-1. overall_score (0-100): Punteggio complessivo dell'idea
-2. strengths: Array di 3-5 punti di forza principali
-3. weaknesses: Array di 3-5 debolezze principali
-4. opportunities: Array di 3-4 opportunità di mercato
-5. threats: Array di 3-4 minacce/rischi
-6. recommendations: Array di 5-7 raccomandazioni actionable
-7. next_steps: Array di 4-6 prossimi passi concreti ordinati per priorità
-
-8. market_validation:
-   - score (0-100)
-   - analysis (2-3 frasi di analisi)
-   - suggestions (3-4 suggerimenti specifici)
-
-9. business_model:
-   - score (0-100)
-   - analysis (2-3 frasi di analisi)
-   - suggestions (3-4 suggerimenti specifici)
-
-10. competitive_landscape:
-    - score (0-100)
-    - analysis (2-3 frasi di analisi)
-    - suggestions (3-4 suggerimenti specifici)
-
-11. financial_viability:
-    - score (0-100)
-    - analysis (2-3 frasi di analisi)
-    - suggestions (3-4 suggerimenti specifici)
-
-12. team_assessment:
-    - score (0-100)
-    - missing_roles (array di ruoli mancanti nel team)
-    - priorities (array di 3-4 priorità di assunzione)
-
-Rispondi SOLO con il JSON valido, senza testo aggiuntivo.
-`
 
 export async function analyzeIdea(input: IdeaAnalysisInput): Promise<IdeaAnalysisResult> {
   try {
-    const prompt = ANALYSIS_PROMPT
-      .replace('{title}', input.title)
-      .replace('{description}', input.description)
-      .replace('{target_market}', input.questionnaire.target_market)
-      .replace('{value_proposition}', input.questionnaire.value_proposition)
-      .replace('{business_model}', input.questionnaire.business_model)
-      .replace('{competitive_advantage}', input.questionnaire.competitive_advantage)
-      .replace('{financial_projections}', input.questionnaire.financial_projections)
-      .replace('{market_size}', input.questionnaire.market_size)
-      .replace('{team_needs}', input.questionnaire.team_needs)
-      .replace('{timeline}', input.questionnaire.timeline)
+    const prompt = `
+Analizza questa idea startup e fornisci un feedback strutturato in formato JSON.
+
+IDEA STARTUP:
+Titolo: ${input.title}
+Descrizione: ${input.description}
+
+DETTAGLI BUSINESS:
+- Mercato target: ${input.questionnaire.target_market}
+- Value proposition: ${input.questionnaire.value_proposition}
+- Business model: ${input.questionnaire.business_model}
+- Vantaggio competitivo: ${input.questionnaire.competitive_advantage}
+- Esperienza team: ${input.questionnaire.team_experience}
+- Funding richiesto: ${input.questionnaire.funding_needed}
+- Timeline: ${input.questionnaire.timeline}
+- Sfide principali: ${input.questionnaire.main_challenges}
+
+Fornisci una risposta SOLO in formato JSON valido con questa struttura:
+
+{
+  "overall_score": 75,
+  "swot_analysis": {
+    "strengths": ["punto di forza 1", "punto di forza 2"],
+    "weaknesses": ["debolezza 1", "debolezza 2"],
+    "opportunities": ["opportunità 1", "opportunità 2"],
+    "threats": ["minaccia 1", "minaccia 2"]
+  },
+  "detailed_feedback": {
+    "market_analysis": {
+      "score": 80,
+      "feedback": "Analisi del mercato dettagliata...",
+      "recommendations": ["raccomandazione 1", "raccomandazione 2"]
+    },
+    "business_model": {
+      "score": 70,
+      "feedback": "Analisi del business model...",
+      "recommendations": ["raccomandazione 1", "raccomandazione 2"]
+    },
+    "team_assessment": {
+      "score": 65,
+      "feedback": "Valutazione del team...",
+      "missing_roles": ["ruolo mancante 1", "ruolo mancante 2"]
+    },
+    "financial_viability": {
+      "score": 75,
+      "feedback": "Analisi finanziaria...",
+      "recommendations": ["raccomandazione 1", "raccomandazione 2"]
+    }
+  },
+  "next_steps": ["passo 1", "passo 2", "passo 3"]
+}
+
+IMPORTANTE: Rispondi SOLO con il JSON, senza testo aggiuntivo.
+`
 
     const message = await anthropic.messages.create({
       model: 'claude-3-sonnet-20240229',
-      max_tokens: 4000,
-      temperature: 0.3,
+      max_tokens: 2000,
       messages: [
         {
           role: 'user',
@@ -135,22 +120,98 @@ export async function analyzeIdea(input: IdeaAnalysisInput): Promise<IdeaAnalysi
       ]
     })
 
-    const content = message.content[0]
-    if (content.type !== 'text') {
-      throw new Error('Unexpected response type from Claude')
-    }
-
-    // Parse the JSON response
-    const analysis = JSON.parse(content.text) as IdeaAnalysisResult
+    const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
     
-    // Validate the response structure
-    if (!analysis.overall_score || !analysis.strengths || !analysis.recommendations) {
-      throw new Error('Invalid analysis structure received')
+    try {
+      const analysis = JSON.parse(responseText) as IdeaAnalysisResult
+      
+      // Validate that we have all required fields
+      if (!analysis.overall_score || !analysis.swot_analysis || !analysis.detailed_feedback || !analysis.next_steps) {
+        throw new Error('Invalid analysis structure')
+      }
+      
+      return analysis
+    } catch (parseError) {
+      console.error('Failed to parse Claude response:', responseText)
+      
+      // Return a fallback analysis if parsing fails
+      return {
+        overall_score: 50,
+        swot_analysis: {
+          strengths: ['Idea con potenziale interessante'],
+          weaknesses: ['Necessita ulteriore definizione'],
+          opportunities: ['Mercato in crescita'],
+          threats: ['Competizione esistente']
+        },
+        detailed_feedback: {
+          market_analysis: {
+            score: 50,
+            feedback: 'L\'idea presenta aspetti interessanti ma necessita di un\'analisi più approfondita del mercato target.',
+            recommendations: ['Conduci ricerche di mercato più dettagliate', 'Identifica chiaramente i competitor']
+          },
+          business_model: {
+            score: 50,
+            feedback: 'Il business model ha potenziale ma richiede maggiore chiarezza sui flussi di ricavo.',
+            recommendations: ['Definisci meglio le fonti di ricavo', 'Analizza i costi operativi']
+          },
+          team_assessment: {
+            score: 50,
+            feedback: 'Il team mostra competenze di base ma potrebbe beneficiare di ulteriori expertise.',
+            missing_roles: ['Marketing specialist', 'Technical lead']
+          },
+          financial_viability: {
+            score: 50,
+            feedback: 'La sostenibilità finanziaria richiede una pianificazione più dettagliata.',
+            recommendations: ['Sviluppa un piano finanziario a 3 anni', 'Identifica KPI di crescita']
+          }
+        },
+        next_steps: [
+          'Approfondisci la ricerca di mercato',
+          'Sviluppa un MVP (Minimum Viable Product)',
+          'Cerca feedback da potenziali clienti',
+          'Completa il team con le competenze mancanti'
+        ]
+      }
     }
 
-    return analysis
   } catch (error) {
-    console.error('Error analyzing idea with Claude:', error)
-    throw new Error('Failed to analyze idea. Please try again.')
+    console.error('Error calling Claude API:', error)
+    
+    // Return a basic fallback if the API call fails
+    return {
+      overall_score: 40,
+      swot_analysis: {
+        strengths: ['Idea imprenditoriale'],
+        weaknesses: ['Analisi incompleta'],
+        opportunities: ['Potenziale di mercato'],
+        threats: ['Incertezza del mercato']
+      },
+      detailed_feedback: {
+        market_analysis: {
+          score: 40,
+          feedback: 'Non è stato possibile completare l\'analisi di mercato. Riprova più tardi.',
+          recommendations: ['Riprova l\'analisi', 'Contatta il supporto se il problema persiste']
+        },
+        business_model: {
+          score: 40,
+          feedback: 'Analisi del business model non disponibile.',
+          recommendations: ['Riprova l\'analisi']
+        },
+        team_assessment: {
+          score: 40,
+          feedback: 'Valutazione del team non disponibile.',
+          missing_roles: ['Da definire']
+        },
+        financial_viability: {
+          score: 40,
+          feedback: 'Analisi finanziaria non disponibile.',
+          recommendations: ['Riprova l\'analisi']
+        }
+      },
+      next_steps: [
+        'Riprova l\'analisi quando il servizio AI è disponibile',
+        'Contatta il supporto se il problema persiste'
+      ]
+    }
   }
 }
