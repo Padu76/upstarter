@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { 
-  BarChart3, CheckCircle, Clock, TrendingUp, Users, DollarSign, 
-  Plus, ArrowRight, FileText, Upload, Edit2, Trash2, Check, X, RefreshCw
+  BarChart3, CheckCircle, Clock, FileText, Upload, Edit2, Trash2, 
+  Check, X, RefreshCw, ArrowRight, Plus, Brain, TrendingUp, Users, 
+  Target, MessageSquare, Lightbulb
 } from 'lucide-react'
 import DocumentAnalyzer from '@/components/DocumentAnalyzer'
 import ProjectEditModal from '@/components/ProjectEditModal'
@@ -66,14 +67,10 @@ export default function Dashboard() {
       const project = projects.find((p: any) => p.id === projectId)
       if (project?.analysis_id) {
         localStorage.removeItem(`analysis_${project.analysis_id}`)
-        // Rimuovi anche le possibili chiavi con doppio prefisso
         localStorage.removeItem(`analysis_analysis_${project.analysis_id}`)
       }
       
-      // Aggiorna stato
       setProjects(updatedProjects)
-      
-      // Dispatch event per aggiornare sidebar
       window.dispatchEvent(new Event('projectsUpdated'))
       
       console.log('Progetto eliminato con successo')
@@ -103,7 +100,6 @@ export default function Dashboard() {
         return
       }
 
-      // Aggiorna localStorage
       const projects = JSON.parse(localStorage.getItem('projects') || '[]')
       const updatedProjects = projects.map((p: any) => 
         p.id === projectId ? { ...p, title: newTitle.trim(), updated_at: new Date().toISOString() } : p
@@ -116,7 +112,6 @@ export default function Dashboard() {
         const analysisKey = `analysis_${project.analysis_id}`
         const analysisKeyDouble = `analysis_analysis_${project.analysis_id}`
         
-        // Prova entrambe le chiavi
         let analysis = JSON.parse(localStorage.getItem(analysisKey) || '{}')
         if (!analysis.id) {
           analysis = JSON.parse(localStorage.getItem(analysisKeyDouble) || '{}')
@@ -131,12 +126,9 @@ export default function Dashboard() {
         }
       }
 
-      // Aggiorna stato
       setProjects(updatedProjects)
       setEditingProject(null)
       setNewTitle('')
-      
-      // Dispatch event per aggiornare sidebar
       window.dispatchEvent(new Event('projectsUpdated'))
       
       console.log('Titolo aggiornato con successo')
@@ -157,19 +149,15 @@ export default function Dashboard() {
 
   const saveProjectChanges = async (updatedProject: Project) => {
     try {
-      // Aggiorna localStorage
       const projects = JSON.parse(localStorage.getItem('projects') || '[]')
       const updatedProjects = projects.map((p: any) => 
         p.id === updatedProject.id ? updatedProject : p
       )
       localStorage.setItem('projects', JSON.stringify(updatedProjects))
 
-      // Aggiorna stato
       setProjects(updatedProjects)
       setShowEditModal(false)
       setSelectedProject(null)
-      
-      // Dispatch event per aggiornare sidebar
       window.dispatchEvent(new Event('projectsUpdated'))
       
       console.log('Progetto aggiornato con successo')
@@ -179,7 +167,6 @@ export default function Dashboard() {
   }
 
   const handleAnalysisRegenerated = () => {
-    // Ricarica i progetti per aggiornare gli score
     setRefreshTrigger(prev => prev + 1)
     loadProjects()
   }
@@ -240,15 +227,12 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600">Benvenuto, {session?.user?.name || 'User'}</p>
+            <p className="text-gray-600 mt-1">Benvenuto, {session?.user?.name || 'User'}</p>
           </div>
-          <button
-            onClick={() => router.push('/dashboard/guided')}
-            className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Nuova Analisi
-          </button>
+          <div className="text-right">
+            <div className="text-sm text-gray-500">Analisi profesionali startup</div>
+            <div className="text-lg font-semibold text-blue-600">UpStarter AI</div>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -287,31 +271,45 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - SEMPLIFICATO */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div 
-            className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white cursor-pointer hover:from-blue-600 hover:to-blue-700 transition-all"
+            className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white cursor-pointer hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105"
             onClick={() => router.push('/dashboard/guided')}
           >
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-xl font-semibold">Questionario Guidato</h3>
-                <p className="text-blue-100 mt-1">Analisi rapida della tua startup</p>
+                <p className="text-blue-100 mt-1">Analisi passo-passo con 18 domande</p>
               </div>
-              <FileText className="w-8 h-8 text-blue-100" />
+              <MessageSquare className="w-8 h-8 text-blue-100" />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-blue-100 text-sm">Raccomandato per startup early-stage</span>
+              <div className="flex items-center space-x-1">
+                <Brain className="w-4 h-4" />
+                <span className="text-sm font-medium">AI Powered</span>
+              </div>
             </div>
           </div>
 
           <div 
-            className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white cursor-pointer hover:from-green-600 hover:to-green-700 transition-all"
+            className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white cursor-pointer hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-105"
             onClick={() => setShowDocumentAnalyzer(true)}
           >
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-xl font-semibold">Analisi Documento</h3>
-                <p className="text-green-100 mt-1">Upload del business plan</p>
+                <p className="text-green-100 mt-1">Upload business plan professionale</p>
               </div>
               <Upload className="w-8 h-8 text-green-100" />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-green-100 text-sm">Supporta PDF, DOC, TXT</span>
+              <div className="flex items-center space-x-1">
+                <Target className="w-4 h-4" />
+                <span className="text-sm font-medium">VC Level</span>
+              </div>
             </div>
           </div>
         </div>
@@ -322,27 +320,37 @@ export default function Dashboard() {
             <h2 className="text-xl font-semibold text-gray-900">Progetti Recenti</h2>
             <button
               onClick={() => router.push('/dashboard/projects')}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
             >
               Vedi tutti
+              <ArrowRight className="w-4 h-4 ml-1" />
             </button>
           </div>
 
           <div className="divide-y">
             {projects.length === 0 ? (
-              <div className="p-8 text-center">
+              <div className="p-12 text-center">
                 <div className="text-gray-400 mb-4">
-                  <BarChart3 className="w-12 h-12 mx-auto" />
+                  <Lightbulb className="w-16 h-16 mx-auto" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun progetto ancora</h3>
-                <p className="text-gray-600 mb-4">Inizia creando la tua prima analisi startup</p>
-                <button
-                  onClick={() => router.push('/dashboard/guided')}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Crea Primo Progetto
-                </button>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Inizia la tua prima analisi</h3>
+                <p className="text-gray-600 mb-6">Crea un progetto per ottenere un'analisi professionale della tua startup</p>
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={() => router.push('/dashboard/guided')}
+                    className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <MessageSquare className="w-5 h-5 mr-2" />
+                    Questionario Guidato
+                  </button>
+                  <button
+                    onClick={() => setShowDocumentAnalyzer(true)}
+                    className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <Upload className="w-5 h-5 mr-2" />
+                    Carica Documento
+                  </button>
+                </div>
               </div>
             ) : (
               projects.slice(0, 5).map((project) => (
@@ -382,17 +390,19 @@ export default function Dashboard() {
                       ) : (
                         <div className="flex items-center space-x-2">
                           <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+                            <div className="flex items-center space-x-3">
+                              <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+                              {project.regenerated_at && (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium flex items-center">
+                                  <RefreshCw className="w-3 h-3 mr-1" />
+                                  Aggiornato
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center space-x-4 mt-1">
                               <span className="text-sm text-gray-500">
                                 {formatDate(project.created_at)}
                               </span>
-                              {project.regenerated_at && (
-                                <span className="text-sm text-green-600 flex items-center">
-                                  <RefreshCw className="w-3 h-3 mr-1" />
-                                  Rigenerata {formatDate(project.regenerated_at)}
-                                </span>
-                              )}
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 project.type === 'professional' ? 'bg-purple-100 text-purple-600' :
                                 project.type === 'guided' ? 'bg-blue-100 text-blue-600' :
@@ -414,34 +424,39 @@ export default function Dashboard() {
                       )}
                     </div>
                     
-                    <div className="flex items-center space-x-3 ml-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(project.score)} ${getScoreColor(project.score)}`}>
-                        {project.score}/100
-                      </span>
+                    <div className="flex items-center space-x-4 ml-4">
+                      <div className="text-center">
+                        <div className={`text-2xl font-bold ${getScoreColor(project.score)}`}>
+                          {project.score}
+                        </div>
+                        <div className="text-xs text-gray-500">Score</div>
+                      </div>
                       
-                      <button
-                        onClick={() => openEditModal(project)}
-                        className="text-blue-600 hover:text-blue-800 transition-colors"
-                        title="Modifica e rigenera analisi"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      
-                      <button
-                        onClick={() => router.push(`/dashboard/analysis/${project.analysis_id}`)}
-                        className="text-blue-600 hover:text-blue-800 transition-colors"
-                        title="Visualizza analisi"
-                      >
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                      
-                      <button
-                        onClick={() => confirmDelete(project)}
-                        className="text-red-600 hover:text-red-800 transition-colors"
-                        title="Elimina progetto"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => openEditModal(project)}
+                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Migliora progetto"
+                        >
+                          <Brain className="w-4 h-4" />
+                        </button>
+                        
+                        <button
+                          onClick={() => router.push(`/dashboard/analysis/${project.analysis_id}`)}
+                          className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+                          title="Visualizza analisi"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                        
+                        <button
+                          onClick={() => confirmDelete(project)}
+                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Elimina progetto"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
