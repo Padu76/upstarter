@@ -8,6 +8,8 @@ import {
   DollarSign, TrendingUp, Lightbulb, Brain, Zap, Save,
   AlertCircle, Info, ChevronRight, ChevronLeft
 } from 'lucide-react'
+
+// Assicurati che questo import sia corretto
 import { ProfessionalStartupAnalyzer } from '@/lib/professional-startup-analyzer'
 
 interface Question {
