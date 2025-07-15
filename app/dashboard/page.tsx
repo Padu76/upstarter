@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { 
   BarChart3, CheckCircle, Clock, TrendingUp, Users, DollarSign, 
-  Plus, ArrowRight, FileText, Upload, Edit2, Trash2, Check, X
+  Plus, ArrowRight, FileText, Upload, Edit2, Trash2, Check, X, RefreshCw
 } from 'lucide-react'
 import DocumentAnalyzer from '@/components/DocumentAnalyzer'
 import ProjectEditModal from '@/components/ProjectEditModal'
@@ -21,6 +21,7 @@ interface Project {
   created_at: string
   updated_at: string
   analysis_id: string
+  regenerated_at?: string
 }
 
 export default function Dashboard() {
@@ -33,10 +34,11 @@ export default function Dashboard() {
   const [newTitle, setNewTitle] = useState('')
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
     loadProjects()
-  }, [session])
+  }, [session, refreshTrigger])
 
   const loadProjects = () => {
     try {
@@ -171,12 +173,15 @@ export default function Dashboard() {
       window.dispatchEvent(new Event('projectsUpdated'))
       
       console.log('Progetto aggiornato con successo')
-      
-      // Potresti voler rigenerare l'analisi qui
-      // regenerateAnalysis(updatedProject)
     } catch (error) {
       console.error('Errore aggiornamento progetto:', error)
     }
+  }
+
+  const handleAnalysisRegenerated = () => {
+    // Ricarica i progetti per aggiornare gli score
+    setRefreshTrigger(prev => prev + 1)
+    loadProjects()
   }
 
   const getScoreColor = (score: number) => {
@@ -189,6 +194,18 @@ export default function Dashboard() {
     if (score >= 80) return 'bg-green-100'
     if (score >= 60) return 'bg-yellow-100'
     return 'bg-red-100'
+  }
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('it-IT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      })
+    } catch {
+      return 'Data non valida'
+    }
   }
 
   const completedProjects = projects.filter(p => p.status === 'completed').length
@@ -223,7 +240,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600">Benvenuto, {session?.user?.name}</p>
+            <p className="text-gray-600">Benvenuto, {session?.user?.name || 'User'}</p>
           </div>
           <button
             onClick={() => router.push('/dashboard/guided')}
@@ -368,8 +385,14 @@ export default function Dashboard() {
                             <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
                             <div className="flex items-center space-x-4 mt-1">
                               <span className="text-sm text-gray-500">
-                                {new Date(project.created_at).toLocaleDateString('it-IT')}
+                                {formatDate(project.created_at)}
                               </span>
+                              {project.regenerated_at && (
+                                <span className="text-sm text-green-600 flex items-center">
+                                  <RefreshCw className="w-3 h-3 mr-1" />
+                                  Rigenerata {formatDate(project.regenerated_at)}
+                                </span>
+                              )}
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 project.type === 'professional' ? 'bg-purple-100 text-purple-600' :
                                 project.type === 'guided' ? 'bg-blue-100 text-blue-600' :
@@ -399,7 +422,7 @@ export default function Dashboard() {
                       <button
                         onClick={() => openEditModal(project)}
                         className="text-blue-600 hover:text-blue-800 transition-colors"
-                        title="Modifica progetto"
+                        title="Modifica e rigenera analisi"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -438,6 +461,7 @@ export default function Dashboard() {
             setSelectedProject(null)
           }}
           onSave={saveProjectChanges}
+          onAnalysisRegenerated={handleAnalysisRegenerated}
         />
       )}
     </div>
