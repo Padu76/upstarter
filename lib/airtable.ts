@@ -6,281 +6,331 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process
 // Definizione delle tabelle
 export const TABLES = {
   USERS: 'Users',
-  PROJECTS: 'Projects', 
+  PROJECTS: 'Projects',
   IDEAS_ANALYSIS: 'Ideas_Analysis',
   ADDITIONAL_INFO: 'Additional_Info'
-} as const
+}
 
-// Tipi TypeScript per i record
-export interface UserRecord {
+// Interfacce TypeScript
+export interface AirtableUser {
   id?: string
   email: string
-  name?: string
-  user_type?: 'startup' | 'investor' | 'consultant'
-  created_at: string
+  name: string
+  user_type: 'startup' | 'investor' | 'consultant'
+  created_at?: string
   updated_at?: string
 }
 
-export interface ProjectRecord {
+export interface AirtableProject {
   id?: string
-  user_id: string
+  user_id?: string[]
   title: string
   description: string
-  score: number
-  status: 'draft' | 'analyzed' | 'archived'
-  type: 'standard' | 'professional'
   source: 'form' | 'document' | 'document_professional'
   source_file?: string
-  completeness?: number
-  created_at: string
-  updated_at: string
+  status: 'draft' | 'analyzed' | 'archived'
+  score: number
+  type: 'standard' | 'professional'
+  created_at?: string
+  updated_at?: string
 }
 
-export interface AnalysisRecord {
+export interface AirtableAnalysis {
   id?: string
-  project_id: string
+  project_id?: string[]
   overall_score: number
-  analysis_data: string // JSON stringified
-  missing_areas?: string // JSON stringified  
-  created_at: string
+  analysis_data: string
+  missing_areas: string
+  completeness_score: number
+  created_at?: string
 }
 
-export interface AdditionalInfoRecord {
+export interface AirtableAdditionalInfo {
   id?: string
-  project_id: string
+  project_id?: string[]
   category: string
   content: string
-  created_at: string
+  priority: 'critical' | 'important' | 'nice_to_have'
+  step_required: 'pitch' | 'business_plan' | 'investment_ready'
+  created_at?: string
 }
 
 class AirtableService {
-  // Operazioni generiche per tutte le tabelle
-  async findRecords(tableName: string, options: any = {}): Promise<any[]> {
+  // USERS OPERATIONS
+  async createUser(userData: AirtableUser): Promise<any> {
     try {
-      const records: any[] = []
-      
-      await base(tableName).select({
-        maxRecords: 100,
-        ...options
-      }).eachPage((pageRecords: any[], fetchNextPage: () => void) => {
-        records.push(...pageRecords.map(record => ({
-          id: record.id,
-          ...record.fields
-        })))
-        fetchNextPage()
-      })
-      
-      return records
+      const records = await base(TABLES.USERS).create([
+        {
+          fields: {
+            email: userData.email,
+            name: userData.name,
+            user_type: userData.user_type,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        }
+      ])
+      return records[0]
     } catch (error) {
-      console.error(`Error finding records in ${tableName}:`, error)
+      console.error('Error creating user:', error)
       throw error
     }
   }
 
-  async createRecord(tableName: string, fields: any): Promise<any> {
+  async getUserByEmail(email: string): Promise<any> {
     try {
-      const record = await base(tableName).create(fields)
-      return {
-        id: record.id,
-        ...record.fields
-      }
-    } catch (error) {
-      console.error(`Error creating record in ${tableName}:`, error)
-      throw error
-    }
-  }
-
-  async updateRecord(tableName: string, recordId: string, fields: any): Promise<any> {
-    try {
-      const record = await base(tableName).update(recordId, fields)
-      return {
-        id: record.id,
-        ...record.fields
-      }
-    } catch (error) {
-      console.error(`Error updating record in ${tableName}:`, error)
-      throw error
-    }
-  }
-
-  async deleteRecord(tableName: string, recordId: string): Promise<boolean> {
-    try {
-      await base(tableName).destroy(recordId)
-      return true
-    } catch (error) {
-      console.error(`Error deleting record in ${tableName}:`, error)
-      return false
-    }
-  }
-
-  // Metodi specifici per Users
-  async findUserByEmail(email: string): Promise<UserRecord | null> {
-    try {
-      const users = await this.findRecords(TABLES.USERS, {
+      const records = await base(TABLES.USERS).select({
         filterByFormula: `{email} = "${email}"`
-      })
-      return users.length > 0 ? users[0] : null
-    } catch (error) {
-      console.error('Error finding user by email:', error)
-      return null
-    }
-  }
-
-  async createUser(userData: Omit<UserRecord, 'id'>): Promise<UserRecord> {
-    return await this.createRecord(TABLES.USERS, userData)
-  }
-
-  // Metodi specifici per Projects
-  async findProjectsByUser(userId: string): Promise<ProjectRecord[]> {
-    try {
-      return await this.findRecords(TABLES.PROJECTS, {
-        filterByFormula: `{user_id} = "${userId}"`,
-        sort: [{ field: 'created_at', direction: 'desc' }]
-      })
-    } catch (error) {
-      console.error('Error finding projects by user:', error)
-      return []
-    }
-  }
-
-  async createProject(projectData: Omit<ProjectRecord, 'id'>): Promise<ProjectRecord> {
-    return await this.createRecord(TABLES.PROJECTS, projectData)
-  }
-
-  async updateProject(projectId: string, projectData: Partial<ProjectRecord>): Promise<ProjectRecord> {
-    return await this.updateRecord(TABLES.PROJECTS, projectId, {
-      ...projectData,
-      updated_at: new Date().toISOString()
-    })
-  }
-
-  async deleteProject(projectId: string): Promise<boolean> {
-    try {
-      // Elimina prima le analisi associate
-      const analyses = await this.findRecords(TABLES.IDEAS_ANALYSIS, {
-        filterByFormula: `{project_id} = "${projectId}"`
-      })
+      }).firstPage()
       
-      for (const analysis of analyses) {
-        await this.deleteRecord(TABLES.IDEAS_ANALYSIS, analysis.id)
-      }
-
-      // Elimina le info aggiuntive associate
-      const additionalInfos = await this.findRecords(TABLES.ADDITIONAL_INFO, {
-        filterByFormula: `{project_id} = "${projectId}"`
-      })
-      
-      for (const info of additionalInfos) {
-        await this.deleteRecord(TABLES.ADDITIONAL_INFO, info.id)
-      }
-
-      // Elimina il progetto
-      return await this.deleteRecord(TABLES.PROJECTS, projectId)
+      return records.length > 0 ? records[0] : null
     } catch (error) {
-      console.error('Error deleting project and related data:', error)
-      return false
+      console.error('Error getting user by email:', error)
+      throw error
     }
   }
 
-  // Metodi specifici per Analysis
-  async findAnalysisByProject(projectId: string): Promise<AnalysisRecord | null> {
+  async getOrCreateUser(email: string, name: string, userType: string = 'startup'): Promise<any> {
     try {
-      const analyses = await this.findRecords(TABLES.IDEAS_ANALYSIS, {
-        filterByFormula: `{project_id} = "${projectId}"`
-      })
-      return analyses.length > 0 ? analyses[0] : null
-    } catch (error) {
-      console.error('Error finding analysis by project:', error)
-      return null
-    }
-  }
-
-  async createAnalysis(analysisData: Omit<AnalysisRecord, 'id'>): Promise<AnalysisRecord> {
-    return await this.createRecord(TABLES.IDEAS_ANALYSIS, analysisData)
-  }
-
-  async updateAnalysis(analysisId: string, analysisData: Partial<AnalysisRecord>): Promise<AnalysisRecord> {
-    return await this.updateRecord(TABLES.IDEAS_ANALYSIS, analysisId, analysisData)
-  }
-
-  // Metodi specifici per Additional Info
-  async findAdditionalInfoByProject(projectId: string): Promise<AdditionalInfoRecord[]> {
-    try {
-      return await this.findRecords(TABLES.ADDITIONAL_INFO, {
-        filterByFormula: `{project_id} = "${projectId}"`,
-        sort: [{ field: 'created_at', direction: 'desc' }]
-      })
-    } catch (error) {
-      console.error('Error finding additional info by project:', error)
-      return []
-    }
-  }
-
-  async createAdditionalInfo(infoData: Omit<AdditionalInfoRecord, 'id'>): Promise<AdditionalInfoRecord> {
-    return await this.createRecord(TABLES.ADDITIONAL_INFO, infoData)
-  }
-
-  // Utility per verificare la connessione
-  async testConnection(): Promise<boolean> {
-    try {
-      await this.findRecords(TABLES.USERS, { maxRecords: 1 })
-      return true
-    } catch (error) {
-      console.error('Airtable connection test failed:', error)
-      return false
-    }
-  }
-
-  // Metodo per inizializzare un utente (crea se non esiste)
-  async initializeUser(email: string, name?: string): Promise<UserRecord> {
-    try {
-      let user = await this.findUserByEmail(email)
+      let user = await this.getUserByEmail(email)
       
       if (!user) {
         user = await this.createUser({
           email,
-          name: name || email.split('@')[0],
-          user_type: 'startup',
-          created_at: new Date().toISOString()
+          name,
+          user_type: userType as 'startup' | 'investor' | 'consultant'
         })
-        console.log('New user created:', email)
       }
       
       return user
     } catch (error) {
-      console.error('Error initializing user:', error)
+      console.error('Error getting or creating user:', error)
       throw error
     }
   }
 
-  // Metodo per ottenere statistiche utente
-  async getUserStats(userId: string): Promise<any> {
+  // PROJECTS OPERATIONS
+  async createProject(projectData: AirtableProject, userEmail: string): Promise<any> {
     try {
-      const projects = await this.findProjectsByUser(userId)
+      // Get or create user first
+      const user = await this.getOrCreateUser(userEmail, userEmail.split('@')[0])
+      
+      const records = await base(TABLES.PROJECTS).create([
+        {
+          fields: {
+            user_id: [user.id],
+            title: projectData.title,
+            description: projectData.description,
+            source: projectData.source,
+            source_file: projectData.source_file || '',
+            status: projectData.status,
+            score: projectData.score,
+            type: projectData.type,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        }
+      ])
+      
+      return records[0]
+    } catch (error) {
+      console.error('Error creating project:', error)
+      throw error
+    }
+  }
+
+  async getProjectsByUser(userEmail: string): Promise<any[]> {
+    try {
+      const user = await this.getUserByEmail(userEmail)
+      if (!user) return []
+
+      const records = await base(TABLES.PROJECTS).select({
+        filterByFormula: `FIND("${user.id}", {user_id})`,
+        sort: [{ field: 'created_at', direction: 'desc' }]
+      }).all()
+
+      return records
+    } catch (error) {
+      console.error('Error getting projects by user:', error)
+      return []
+    }
+  }
+
+  async getProjectById(projectId: string): Promise<any> {
+    try {
+      const record = await base(TABLES.PROJECTS).find(projectId)
+      return record
+    } catch (error) {
+      console.error('Error getting project by ID:', error)
+      throw error
+    }
+  }
+
+  async updateProject(projectId: string, updates: Partial<AirtableProject>): Promise<any> {
+    try {
+      const record = await base(TABLES.PROJECTS).update(projectId, {
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      return record
+    } catch (error) {
+      console.error('Error updating project:', error)
+      throw error
+    }
+  }
+
+  async deleteProject(projectId: string): Promise<boolean> {
+    try {
+      await base(TABLES.PROJECTS).destroy(projectId)
+      return true
+    } catch (error) {
+      console.error('Error deleting project:', error)
+      return false
+    }
+  }
+
+  // IDEAS_ANALYSIS OPERATIONS
+  async createAnalysis(analysisData: AirtableAnalysis, projectId: string): Promise<any> {
+    try {
+      const records = await base(TABLES.IDEAS_ANALYSIS).create([
+        {
+          fields: {
+            project_id: [projectId],
+            overall_score: analysisData.overall_score,
+            analysis_data: analysisData.analysis_data,
+            missing_areas: analysisData.missing_areas,
+            completeness_score: analysisData.completeness_score,
+            created_at: new Date().toISOString()
+          }
+        }
+      ])
+      
+      return records[0]
+    } catch (error) {
+      console.error('Error creating analysis:', error)
+      throw error
+    }
+  }
+
+  async getAnalysisByProject(projectId: string): Promise<any> {
+    try {
+      const records = await base(TABLES.IDEAS_ANALYSIS).select({
+        filterByFormula: `FIND("${projectId}", {project_id})`,
+        sort: [{ field: 'created_at', direction: 'desc' }]
+      }).firstPage()
+      
+      return records.length > 0 ? records[0] : null
+    } catch (error) {
+      console.error('Error getting analysis by project:', error)
+      throw error
+    }
+  }
+
+  // ADDITIONAL_INFO OPERATIONS
+  async createAdditionalInfo(infoData: AirtableAdditionalInfo, projectId: string): Promise<any> {
+    try {
+      const records = await base(TABLES.ADDITIONAL_INFO).create([
+        {
+          fields: {
+            project_id: [projectId],
+            category: infoData.category,
+            content: infoData.content,
+            priority: infoData.priority,
+            step_required: infoData.step_required,
+            created_at: new Date().toISOString()
+          }
+        }
+      ])
+      
+      return records[0]
+    } catch (error) {
+      console.error('Error creating additional info:', error)
+      throw error
+    }
+  }
+
+  async getAdditionalInfoByProject(projectId: string): Promise<any[]> {
+    try {
+      const records = await base(TABLES.ADDITIONAL_INFO).select({
+        filterByFormula: `FIND("${projectId}", {project_id})`,
+        sort: [{ field: 'created_at', direction: 'desc' }]
+      }).all()
+
+      return records
+    } catch (error) {
+      console.error('Error getting additional info by project:', error)
+      return []
+    }
+  }
+
+  async deleteAdditionalInfo(infoId: string): Promise<boolean> {
+    try {
+      await base(TABLES.ADDITIONAL_INFO).destroy(infoId)
+      return true
+    } catch (error) {
+      console.error('Error deleting additional info:', error)
+      return false
+    }
+  }
+
+  // UTILITY FUNCTIONS
+  async getAllProjects(): Promise<any[]> {
+    try {
+      const records = await base(TABLES.PROJECTS).select({
+        sort: [{ field: 'created_at', direction: 'desc' }]
+      }).all()
+
+      return records
+    } catch (error) {
+      console.error('Error getting all projects:', error)
+      return []
+    }
+  }
+
+  async getProjectStats(userEmail: string): Promise<any> {
+    try {
+      const projects = await this.getProjectsByUser(userEmail)
       
       const stats = {
-        total_projects: projects.length,
-        analyzed_projects: projects.filter(p => p.status === 'analyzed').length,
-        draft_projects: projects.filter(p => p.status === 'draft').length,
-        average_score: projects.length > 0 
-          ? Math.round(projects.reduce((sum, p) => sum + p.score, 0) / projects.length)
-          : 0,
-        latest_project: projects.length > 0 ? projects[0] : null
+        total: projects.length,
+        analyzed: projects.filter(p => p.fields.status === 'analyzed').length,
+        draft: projects.filter(p => p.fields.status === 'draft').length,
+        archived: projects.filter(p => p.fields.status === 'archived').length,
+        avgScore: projects.length > 0 ? 
+          Math.round(projects.reduce((acc, p) => acc + p.fields.score, 0) / projects.length) : 0
       }
       
       return stats
     } catch (error) {
-      console.error('Error getting user stats:', error)
-      return {
-        total_projects: 0,
-        analyzed_projects: 0,
-        draft_projects: 0,
-        average_score: 0,
-        latest_project: null
+      console.error('Error getting project stats:', error)
+      return { total: 0, analyzed: 0, draft: 0, archived: 0, avgScore: 0 }
+    }
+  }
+
+  // SEARCH FUNCTIONS
+  async searchProjects(query: string, userEmail?: string): Promise<any[]> {
+    try {
+      let filterFormula = `OR(FIND("${query}", {title}), FIND("${query}", {description}))`
+      
+      if (userEmail) {
+        const user = await this.getUserByEmail(userEmail)
+        if (user) {
+          filterFormula = `AND(${filterFormula}, FIND("${user.id}", {user_id}))`
+        }
       }
+
+      const records = await base(TABLES.PROJECTS).select({
+        filterByFormula: filterFormula,
+        sort: [{ field: 'created_at', direction: 'desc' }]
+      }).all()
+
+      return records
+    } catch (error) {
+      console.error('Error searching projects:', error)
+      return []
     }
   }
 }
 
-export const airtableService = new AirtableService()
+const airtableService = new AirtableService()
 export default airtableService
