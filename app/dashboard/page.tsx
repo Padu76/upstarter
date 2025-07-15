@@ -41,6 +41,19 @@ export default function Dashboard() {
     loadProjects()
   }, [session, refreshTrigger])
 
+  useEffect(() => {
+    // Listener per aprire DocumentAnalyzer dalla sidebar
+    const handleShowDocumentAnalyzer = () => {
+      setShowDocumentAnalyzer(true)
+    }
+
+    window.addEventListener('showDocumentAnalyzer', handleShowDocumentAnalyzer)
+    
+    return () => {
+      window.removeEventListener('showDocumentAnalyzer', handleShowDocumentAnalyzer)
+    }
+  }, [])
+
   const loadProjects = () => {
     try {
       const storedProjects = localStorage.getItem('projects')
