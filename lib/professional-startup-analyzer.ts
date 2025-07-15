@@ -21,11 +21,11 @@ export interface StartupAnalysisResult {
 }
 
 interface BerkusAnalysis {
-  base_value: { score: number; max: 100000; reasoning: string }
-  technology: { score: number; max: 100000; reasoning: string }
-  execution: { score: number; max: 100000; reasoning: string }
-  market_relationships: { score: number; max: 100000; reasoning: string }
-  production_sales: { score: number; max: 100000; reasoning: string }
+  base_value: { score: number; max: number; reasoning: string }
+  technology: { score: number; max: number; reasoning: string }
+  execution: { score: number; max: number; reasoning: string }
+  market_relationships: { score: number; max: number; reasoning: string }
+  production_sales: { score: number; max: number; reasoning: string }
   total_valuation: number
 }
 
