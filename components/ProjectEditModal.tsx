@@ -1,16 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Save, Plus, Trash2, Users, DollarSign, Target, TrendingUp } from 'lucide-react'
+import { X, Save, Plus, Trash2, Users, DollarSign, Target, TrendingUp, RefreshCw, Zap } from 'lucide-react'
+import { ProfessionalStartupAnalyzer } from '@/lib/professional-startup-analyzer'
 
 interface ProjectEditModalProps {
   project: any
   isOpen: boolean
   onClose: () => void
   onSave: (updatedProject: any) => void
+  onAnalysisRegenerated?: () => void
 }
 
-export default function ProjectEditModal({ project, isOpen, onClose, onSave }: ProjectEditModalProps) {
+export default function ProjectEditModal({ project, isOpen, onClose, onSave, onAnalysisRegenerated }: ProjectEditModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -24,6 +26,9 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
     businessModel: '',
     additionalNotes: ''
   })
+
+  const [isRegenerating, setIsRegenerating] = useState(false)
+  const [regenerationProgress, setRegenerationProgress] = useState(0)
 
   useEffect(() => {
     if (project) {
@@ -85,6 +90,134 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
     }))
   }
 
+  const generateAnalysisContent = () => {
+    const sections = []
+    
+    if (formData.title) sections.push(`TITOLO: ${formData.title}`)
+    if (formData.description) sections.push(`DESCRIZIONE: ${formData.description}`)
+    if (formData.uniqueValue) sections.push(`VALUE PROPOSITION: ${formData.uniqueValue}`)
+    if (formData.targetMarket) sections.push(`TARGET MARKET: ${formData.targetMarket}`)
+    if (formData.businessModel) sections.push(`BUSINESS MODEL: ${formData.businessModel}`)
+    if (formData.revenueModel) sections.push(`REVENUE MODEL: ${formData.revenueModel}`)
+    
+    if (formData.teamMembers.length > 0) {
+      sections.push(`TEAM: ${formData.teamMembers.filter(m => m.trim()).join(', ')}`)
+    }
+    
+    if (formData.marketSize) sections.push(`MARKET SIZE: ${formData.marketSize}`)
+    
+    if (formData.competitorsList.length > 0) {
+      sections.push(`COMPETITORS: ${formData.competitorsList.filter(c => c.trim()).join(', ')}`)
+    }
+    
+    if (formData.fundingNeeds) sections.push(`FUNDING NEEDS: ${formData.fundingNeeds}`)
+    if (formData.additionalNotes) sections.push(`NOTE AGGIUNTIVE: ${formData.additionalNotes}`)
+    
+    return sections.join('\n\n')
+  }
+
+  const regenerateAnalysis = async () => {
+    try {
+      setIsRegenerating(true)
+      setRegenerationProgress(0)
+      
+      // Simula progresso
+      const progressInterval = setInterval(() => {
+        setRegenerationProgress(prev => {
+          const newProgress = prev + 10
+          return newProgress >= 90 ? 90 : newProgress
+        })
+      }, 200)
+      
+      // Genera contenuto per l'analisi
+      const analysisContent = generateAnalysisContent()
+      
+      if (!analysisContent.trim()) {
+        throw new Error('Aggiungi almeno alcune informazioni prima di rigenerare l\'analisi')
+      }
+      
+      // Inizializza l'analizzatore
+      const analyzer = new ProfessionalStartupAnalyzer()
+      
+      // Genera nuova analisi
+      const newAnalysis = await analyzer.analyzeStartup(formData.title, analysisContent)
+      
+      // Carica l'analisi esistente
+      const analysisKey = `analysis_${project.analysis_id}`
+      const analysisKeyDouble = `analysis_analysis_${project.analysis_id}`
+      
+      let existingAnalysis = JSON.parse(localStorage.getItem(analysisKey) || '{}')
+      if (!existingAnalysis.id) {
+        existingAnalysis = JSON.parse(localStorage.getItem(analysisKeyDouble) || '{}')
+      }
+      
+      // Aggiorna l'analisi esistente
+      const updatedAnalysis = {
+        ...existingAnalysis,
+        title: formData.title,
+        professional_analysis: newAnalysis,
+        analysis_data: {
+          ...existingAnalysis.analysis_data,
+          professional_analysis: newAnalysis
+        },
+        updated_at: new Date().toISOString(),
+        regenerated_at: new Date().toISOString()
+      }
+      
+      // Salva l'analisi aggiornata
+      localStorage.setItem(analysisKey, JSON.stringify(updatedAnalysis))
+      if (localStorage.getItem(analysisKeyDouble)) {
+        localStorage.setItem(analysisKeyDouble, JSON.stringify(updatedAnalysis))
+      }
+      
+      // Aggiorna anche il progetto
+      const projects = JSON.parse(localStorage.getItem('projects') || '[]')
+      const updatedProjects = projects.map((p: any) => 
+        p.id === project.id ? {
+          ...p,
+          ...formData,
+          teamMembers: formData.teamMembers.filter(member => member.trim()),
+          competitorsList: formData.competitorsList.filter(comp => comp.trim()),
+          score: newAnalysis.overall_score,
+          updated_at: new Date().toISOString(),
+          regenerated_at: new Date().toISOString()
+        } : p
+      )
+      
+      localStorage.setItem('projects', JSON.stringify(updatedProjects))
+      
+      // Completa il progresso
+      clearInterval(progressInterval)
+      setRegenerationProgress(100)
+      
+      // Notifica il successo
+      setTimeout(() => {
+        setIsRegenerating(false)
+        setRegenerationProgress(0)
+        
+        // Chiama i callback
+        if (onAnalysisRegenerated) {
+          onAnalysisRegenerated()
+        }
+        
+        // Aggiorna la dashboard
+        window.dispatchEvent(new Event('projectsUpdated'))
+        
+        // Mostra messaggio di successo
+        alert('Analisi rigenerata con successo! Il nuovo score è: ' + newAnalysis.overall_score + '/100')
+        
+        // Chiudi il modal
+        onClose()
+      }, 1000)
+      
+    } catch (error) {
+      console.error('Errore rigenerazione analisi:', error)
+      setIsRegenerating(false)
+      setRegenerationProgress(0)
+      alert('Errore durante la rigenerazione: ' + (error as Error).message)
+    }
+  }
+
   const handleSave = () => {
     const updatedProject = {
       ...project,
@@ -106,10 +239,32 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
           <button
             onClick={onClose}
             className="text-white hover:text-gray-200 transition-colors"
+            disabled={isRegenerating}
           >
             <X className="w-6 h-6" />
           </button>
         </div>
+
+        {/* Progress Bar */}
+        {isRegenerating && (
+          <div className="p-4 bg-blue-50 border-b">
+            <div className="flex items-center space-x-3">
+              <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-blue-600">Rigenerazione analisi in corso...</span>
+                  <span className="text-sm text-blue-600">{regenerationProgress}%</span>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${regenerationProgress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="p-6 space-y-6">
           {/* Titolo */}
@@ -123,6 +278,7 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Nome del progetto"
+              disabled={isRegenerating}
             />
           </div>
 
@@ -137,6 +293,7 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Descrizione dettagliata del progetto, problema che risolve, soluzione proposta"
+              disabled={isRegenerating}
             />
           </div>
 
@@ -152,6 +309,7 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Cosa rende unico il tuo prodotto? Qual è il valore distintivo per i clienti?"
+              disabled={isRegenerating}
             />
           </div>
 
@@ -167,6 +325,7 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Chi sono i tuoi clienti target? Caratteristiche demografiche, comportamenti, bisogni"
+              disabled={isRegenerating}
             />
           </div>
 
@@ -179,7 +338,8 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
               </label>
               <button
                 onClick={addTeamMember}
-                className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
+                className="flex items-center text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50"
+                disabled={isRegenerating}
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Aggiungi Membro
@@ -196,11 +356,13 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
                   onChange={(e) => updateTeamMember(index, e.target.value)}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Nome, ruolo ed esperienza del team member"
+                  disabled={isRegenerating}
                 />
                 <button
                   onClick={() => removeTeamMember(index)}
-                  className="text-red-600 hover:text-red-800"
+                  className="text-red-600 hover:text-red-800 disabled:opacity-50"
                   title="Rimuovi membro"
+                  disabled={isRegenerating}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -220,6 +382,7 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="TAM (Total Addressable Market), SAM (Serviceable Addressable Market), SOM (Serviceable Obtainable Market)"
+              disabled={isRegenerating}
             />
           </div>
 
@@ -232,7 +395,8 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
               </label>
               <button
                 onClick={addCompetitor}
-                className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
+                className="flex items-center text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50"
+                disabled={isRegenerating}
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Aggiungi Competitor
@@ -249,11 +413,13 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
                   onChange={(e) => updateCompetitor(index, e.target.value)}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Nome competitor, caratteristiche principali e differenziazione"
+                  disabled={isRegenerating}
                 />
                 <button
                   onClick={() => removeCompetitor(index)}
-                  className="text-red-600 hover:text-red-800"
+                  className="text-red-600 hover:text-red-800 disabled:opacity-50"
                   title="Rimuovi competitor"
+                  disabled={isRegenerating}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -273,6 +439,7 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="B2B, B2C, B2B2C, Marketplace, SaaS, ecc. Come funziona il tuo business?"
+              disabled={isRegenerating}
             />
           </div>
 
@@ -288,6 +455,7 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Come genera ricavi il progetto? Abbonamenti, vendite una tantum, commissioni, freemium, ecc."
+              disabled={isRegenerating}
             />
           </div>
 
@@ -303,6 +471,7 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Quanto serve per raggiungere i prossimi milestone? Per cosa verranno usati i fondi?"
+              disabled={isRegenerating}
             />
           </div>
 
@@ -317,27 +486,47 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave }: P
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Altre informazioni importanti, milestone raggiunti, partnership, brevetti, ecc."
+              disabled={isRegenerating}
             />
           </div>
         </div>
 
         <div className="flex items-center justify-between p-6 border-t bg-gray-50 rounded-b-xl">
           <div className="text-sm text-gray-600">
-            Le modifiche verranno salvate e potrai rigenerare l'analisi
+            {isRegenerating ? 'Rigenerazione in corso...' : 'Modifica i dati e rigenera l\'analisi con i nuovi parametri'}
           </div>
           <div className="flex space-x-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
+              disabled={isRegenerating}
             >
               Annulla
             </button>
             <button
               onClick={handleSave}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center disabled:opacity-50"
+              disabled={isRegenerating}
             >
               <Save className="w-4 h-4 mr-2" />
-              Salva Modifiche
+              Salva Solo
+            </button>
+            <button
+              onClick={regenerateAnalysis}
+              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-colors flex items-center disabled:opacity-50"
+              disabled={isRegenerating}
+            >
+              {isRegenerating ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Rigenerazione...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Rigenera Analisi
+                </>
+              )}
             </button>
           </div>
         </div>
