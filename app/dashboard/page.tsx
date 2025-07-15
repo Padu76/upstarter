@@ -1,177 +1,198 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { 
-  Plus, BarChart3, FileText, TrendingUp, Users, DollarSign, 
-  Clock, Star, ArrowRight, Zap, Target, Brain, Award,
-  AlertCircle, CheckCircle, Calendar, Upload
+  BarChart3, CheckCircle, Clock, TrendingUp, Users, DollarSign, 
+  Plus, ArrowRight, FileText, Upload, Edit2, Trash2, Check, X
 } from 'lucide-react'
+import DocumentAnalyzer from '@/components/DocumentAnalyzer'
+import ProjectEditModal from '@/components/ProjectEditModal'
 
 interface Project {
   id: string
   title: string
   description: string
   score: number
-  status: 'draft' | 'analyzed' | 'archived'
-  type: 'standard' | 'professional'
-  source: 'form' | 'document' | 'document_professional'
+  status: 'completed' | 'draft'
+  type: 'guided' | 'document' | 'professional'
+  source: string
   created_at: string
-  analysis_id?: string
+  updated_at: string
+  analysis_id: string
 }
 
-interface DashboardStats {
-  total: number
-  analyzed: number
-  draft: number
-  avgScore: number
-}
-
-export default function DashboardPage() {
-  const { data: session, status } = useSession()
+export default function Dashboard() {
+  const { data: session } = useSession()
   const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
-  const [stats, setStats] = useState<DashboardStats>({ total: 0, analyzed: 0, draft: 0, avgScore: 0 })
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [showDocumentAnalyzer, setShowDocumentAnalyzer] = useState(false)
+  const [editingProject, setEditingProject] = useState<string | null>(null)
+  const [newTitle, setNewTitle] = useState('')
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(() => {
-    if (status === 'loading') return
-    if (!session) {
-      router.push('/auth/signin')
-      return
-    }
-    loadDashboardData()
-  }, [session, status])
+    loadProjects()
+  }, [session])
 
-  const loadDashboardData = async () => {
+  const loadProjects = () => {
     try {
-      setLoading(true)
-      setError(null)
-
-      // Carica progetti dal localStorage
-      const localProjects = loadLocalProjects()
-      
-      // Se non ci sono progetti locali, prova a caricare dall'API
-      if (localProjects.length === 0) {
-        await loadProjectsFromAPI()
-      } else {
-        setProjects(localProjects)
-        calculateStats(localProjects)
+      const storedProjects = localStorage.getItem('projects')
+      if (storedProjects) {
+        const parsedProjects = JSON.parse(storedProjects)
+        console.log('Loaded projects for user:', session?.user?.email, parsedProjects.length)
+        setProjects(parsedProjects)
       }
-
     } catch (error) {
-      console.error('Error loading dashboard data:', error)
-      setError('Errore nel caricamento dei dati')
+      console.error('Error loading projects:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const loadLocalProjects = (): Project[] => {
+  const deleteProject = async (projectId: string) => {
     try {
-      // Carica dalla lista progetti
-      const projectsList = JSON.parse(localStorage.getItem('projects') || '[]')
+      // Rimuovi da localStorage
+      const projects = JSON.parse(localStorage.getItem('projects') || '[]')
+      const updatedProjects = projects.filter((p: any) => p.id !== projectId)
+      localStorage.setItem('projects', JSON.stringify(updatedProjects))
       
-      // Carica anche dalle analisi salvate
-      const analysisProjects: Project[] = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && key.startsWith('analysis_')) {
-          try {
-            const analysisData = JSON.parse(localStorage.getItem(key) || '{}')
-            if (analysisData.title && analysisData.id) {
-              analysisProjects.push({
-                id: analysisData.project_id || analysisData.id,
-                title: analysisData.title || 'Progetto Senza Titolo',
-                description: analysisData.description || 'Analisi professionale',
-                score: analysisData.overall_score || 0,
-                status: 'analyzed' as const,
-                type: analysisData.type || 'professional' as const,
-                source: analysisData.source || 'document_professional' as const,
-                created_at: analysisData.created_at || new Date().toISOString(),
-                analysis_id: key
-              })
-            }
-          } catch (e) {
-            console.warn('Error parsing analysis data for key:', key)
+      // Rimuovi analisi associata
+      const project = projects.find((p: any) => p.id === projectId)
+      if (project?.analysis_id) {
+        localStorage.removeItem(`analysis_${project.analysis_id}`)
+        // Rimuovi anche le possibili chiavi con doppio prefisso
+        localStorage.removeItem(`analysis_analysis_${project.analysis_id}`)
+      }
+      
+      // Aggiorna stato
+      setProjects(updatedProjects)
+      
+      // Dispatch event per aggiornare sidebar
+      window.dispatchEvent(new Event('projectsUpdated'))
+      
+      console.log('Progetto eliminato con successo')
+    } catch (error) {
+      console.error('Errore eliminazione progetto:', error)
+    }
+  }
+
+  const confirmDelete = (project: Project) => {
+    const confirmed = window.confirm(
+      `Sei sicuro di voler eliminare il progetto "${project.title}"? Questa azione non può essere annullata.`
+    )
+    if (confirmed) {
+      deleteProject(project.id)
+    }
+  }
+
+  const startEditing = (project: Project) => {
+    setEditingProject(project.id)
+    setNewTitle(project.title)
+  }
+
+  const saveTitle = async (projectId: string) => {
+    try {
+      if (!newTitle.trim()) {
+        alert('Il titolo non può essere vuoto')
+        return
+      }
+
+      // Aggiorna localStorage
+      const projects = JSON.parse(localStorage.getItem('projects') || '[]')
+      const updatedProjects = projects.map((p: any) => 
+        p.id === projectId ? { ...p, title: newTitle.trim(), updated_at: new Date().toISOString() } : p
+      )
+      localStorage.setItem('projects', JSON.stringify(updatedProjects))
+
+      // Aggiorna anche l'analisi associata
+      const project = projects.find((p: any) => p.id === projectId)
+      if (project?.analysis_id) {
+        const analysisKey = `analysis_${project.analysis_id}`
+        const analysisKeyDouble = `analysis_analysis_${project.analysis_id}`
+        
+        // Prova entrambe le chiavi
+        let analysis = JSON.parse(localStorage.getItem(analysisKey) || '{}')
+        if (!analysis.id) {
+          analysis = JSON.parse(localStorage.getItem(analysisKeyDouble) || '{}')
+        }
+        
+        if (analysis.id) {
+          analysis.title = newTitle.trim()
+          localStorage.setItem(analysisKey, JSON.stringify(analysis))
+          if (localStorage.getItem(analysisKeyDouble)) {
+            localStorage.setItem(analysisKeyDouble, JSON.stringify(analysis))
           }
         }
       }
 
-      // Combina e deduplica progetti
-      const allProjects = [...projectsList, ...analysisProjects]
-      const uniqueProjects = allProjects.filter((project, index, self) => 
-        index === self.findIndex(p => p.id === project.id)
-      )
-
-      // Ordina per data di creazione (più recenti prima)
-      return uniqueProjects.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
-
+      // Aggiorna stato
+      setProjects(updatedProjects)
+      setEditingProject(null)
+      setNewTitle('')
+      
+      // Dispatch event per aggiornare sidebar
+      window.dispatchEvent(new Event('projectsUpdated'))
+      
+      console.log('Titolo aggiornato con successo')
     } catch (error) {
-      console.error('Error loading local projects:', error)
-      return []
+      console.error('Errore rinomina progetto:', error)
     }
   }
 
-  const loadProjectsFromAPI = async () => {
+  const cancelEditing = () => {
+    setEditingProject(null)
+    setNewTitle('')
+  }
+
+  const openEditModal = (project: Project) => {
+    setSelectedProject(project)
+    setShowEditModal(true)
+  }
+
+  const saveProjectChanges = async (updatedProject: Project) => {
     try {
-      const response = await fetch('/api/projects')
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          setProjects(data.projects || [])
-          setStats(data.stats || { total: 0, analyzed: 0, draft: 0, avgScore: 0 })
-        }
-      }
+      // Aggiorna localStorage
+      const projects = JSON.parse(localStorage.getItem('projects') || '[]')
+      const updatedProjects = projects.map((p: any) => 
+        p.id === updatedProject.id ? updatedProject : p
+      )
+      localStorage.setItem('projects', JSON.stringify(updatedProjects))
+
+      // Aggiorna stato
+      setProjects(updatedProjects)
+      setShowEditModal(false)
+      setSelectedProject(null)
+      
+      // Dispatch event per aggiornare sidebar
+      window.dispatchEvent(new Event('projectsUpdated'))
+      
+      console.log('Progetto aggiornato con successo')
+      
+      // Potresti voler rigenerare l'analisi qui
+      // regenerateAnalysis(updatedProject)
     } catch (error) {
-      console.error('Error loading projects from API:', error)
-    }
-  }
-
-  const calculateStats = (projectList: Project[]) => {
-    const total = projectList.length
-    const analyzed = projectList.filter(p => p.status === 'analyzed').length
-    const draft = projectList.filter(p => p.status === 'draft').length
-    const avgScore = total > 0 
-      ? Math.round(projectList.reduce((acc, p) => acc + (p.score || 0), 0) / total)
-      : 0
-
-    setStats({ total, analyzed, draft, avgScore })
-  }
-
-  const handleProjectClick = (project: Project) => {
-    // Usa URL corretti basati sul tipo di progetto
-    if (project.analysis_id) {
-      // Se ha analysis_id, vai alla pagina di analisi
-      const analysisId = project.analysis_id.replace('analysis_', '')
-      router.push(`/dashboard/analysis/${analysisId}`)
-    } else if (project.type === 'professional' || project.source === 'document_professional') {
-      // Se è professionale, prova con l'ID del progetto
-      router.push(`/dashboard/analysis/${project.id}`)
-    } else {
-      // Fallback per progetti standard
-      router.push(`/dashboard/projects/${project.id}`)
+      console.error('Errore aggiornamento progetto:', error)
     }
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 bg-green-100'
-    if (score >= 60) return 'text-yellow-600 bg-yellow-100'
-    if (score >= 40) return 'text-orange-600 bg-orange-100'
-    return 'text-red-600 bg-red-100'
+    if (score >= 80) return 'text-green-600'
+    if (score >= 60) return 'text-yellow-600'
+    return 'text-red-600'
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'analyzed': return <CheckCircle className="w-4 h-4 text-green-600" />
-      case 'draft': return <Clock className="w-4 h-4 text-yellow-600" />
-      default: return <AlertCircle className="w-4 h-4 text-gray-600" />
-    }
+  const getScoreBackground = (score: number) => {
+    if (score >= 80) return 'bg-green-100'
+    if (score >= 60) return 'bg-yellow-100'
+    return 'bg-red-100'
   }
+
+  const completedProjects = projects.filter(p => p.status === 'completed').length
+  const draftProjects = projects.filter(p => p.status === 'draft').length
 
   if (loading) {
     return (
@@ -184,84 +205,67 @@ export default function DashboardPage() {
     )
   }
 
+  if (showDocumentAnalyzer) {
+    return (
+      <DocumentAnalyzer 
+        onAnalysisComplete={(analysis) => {
+          loadProjects()
+          setShowDocumentAnalyzer(false)
+        }}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600 mt-1">
-                Benvenuto, {session?.user?.name || session?.user?.email}
-              </p>
-            </div>
-            <button
-              onClick={() => router.push('/dashboard/new-idea')}
-              className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Nuova Analisi
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {error && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
-            <AlertCircle className="w-5 h-5 text-red-500 mr-3" />
-            <p className="text-red-700">{error}</p>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600">Benvenuto, {session?.user?.name}</p>
           </div>
-        )}
+          <button
+            onClick={() => router.push('/dashboard/guided')}
+            className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Nuova Analisi
+          </button>
+        </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Progetti Totali</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <BarChart3 className="w-6 h-6 text-blue-600" />
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Progetti Totali</h3>
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-blue-600">{projects.length}</div>
+              <div className="text-gray-600 text-sm mt-1">progetti</div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Analizzati</p>
-                <p className="text-3xl font-bold text-green-600">{stats.analyzed}</p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Analizzati</h3>
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-green-600">{completedProjects}</div>
+              <div className="text-gray-600 text-sm mt-1">completati</div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">In Bozza</p>
-                <p className="text-3xl font-bold text-yellow-600">{stats.draft}</p>
-              </div>
-              <div className="p-3 bg-yellow-100 rounded-full">
-                <Clock className="w-6 h-6 text-yellow-600" />
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">In Bozza</h3>
+              <Clock className="w-5 h-5 text-yellow-600" />
             </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Score Medio</p>
-                <p className="text-3xl font-bold text-purple-600">{stats.avgScore}</p>
-              </div>
-              <div className="p-3 bg-purple-100 rounded-full">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
-              </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-yellow-600">{draftProjects}</div>
+              <div className="text-gray-600 text-sm mt-1">in lavorazione</div>
             </div>
           </div>
         </div>
@@ -269,108 +273,173 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div 
-            onClick={() => router.push('/dashboard/new-idea')}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white cursor-pointer hover:from-blue-600 hover:to-blue-700 transition-all transform hover:-translate-y-1"
+            className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white cursor-pointer hover:from-blue-600 hover:to-blue-700 transition-all"
+            onClick={() => router.push('/dashboard/guided')}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-xl font-semibold mb-2">Questionario Guidato</h3>
-                <p className="text-blue-100">Analisi rapida della tua startup</p>
+                <h3 className="text-xl font-semibold">Questionario Guidato</h3>
+                <p className="text-blue-100 mt-1">Analisi rapida della tua startup</p>
               </div>
-              <FileText className="w-8 h-8 text-blue-200" />
+              <FileText className="w-8 h-8 text-blue-100" />
             </div>
           </div>
 
           <div 
-            onClick={() => router.push('/dashboard/new-idea')}
-            className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white cursor-pointer hover:from-green-600 hover:to-green-700 transition-all transform hover:-translate-y-1"
+            className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white cursor-pointer hover:from-green-600 hover:to-green-700 transition-all"
+            onClick={() => setShowDocumentAnalyzer(true)}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-xl font-semibold mb-2">Analisi Documento</h3>
-                <p className="text-green-100">Upload del business plan</p>
+                <h3 className="text-xl font-semibold">Analisi Documento</h3>
+                <p className="text-green-100 mt-1">Upload del business plan</p>
               </div>
-              <Upload className="w-8 h-8 text-green-200" />
+              <Upload className="w-8 h-8 text-green-100" />
             </div>
           </div>
         </div>
 
-        {/* Recent Projects */}
+        {/* Projects List */}
         <div className="bg-white rounded-xl shadow-lg">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">Progetti Recenti</h2>
-              {projects.length > 0 && (
-                <button 
-                  onClick={() => router.push('/dashboard/projects')}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                >
-                  Vedi tutti
-                </button>
-              )}
-            </div>
+          <div className="flex items-center justify-between p-6 border-b">
+            <h2 className="text-xl font-semibold text-gray-900">Progetti Recenti</h2>
+            <button
+              onClick={() => router.push('/dashboard/projects')}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              Vedi tutti
+            </button>
           </div>
 
-          <div className="p-6">
+          <div className="divide-y">
             {projects.length === 0 ? (
-              <div className="text-center py-12">
-                <Brain className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <div className="p-8 text-center">
+                <div className="text-gray-400 mb-4">
+                  <BarChart3 className="w-12 h-12 mx-auto" />
+                </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun progetto ancora</h3>
-                <p className="text-gray-600 mb-6">Inizia analizzando la tua prima idea startup</p>
+                <p className="text-gray-600 mb-4">Inizia creando la tua prima analisi startup</p>
                 <button
-                  onClick={() => router.push('/dashboard/new-idea')}
-                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={() => router.push('/dashboard/guided')}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  <Plus className="w-5 h-5 mr-2" />
+                  <Plus className="w-4 h-4 mr-2" />
                   Crea Primo Progetto
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
-                {projects.slice(0, 5).map((project) => (
-                  <div
-                    key={project.id}
-                    onClick={() => handleProjectClick(project)}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        {getStatusIcon(project.status)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-lg font-medium text-gray-900 truncate">
-                          {project.title || 'Progetto Senza Titolo'}
-                        </h4>
-                        <p className="text-sm text-gray-600 truncate">
-                          {project.description || 'Nessuna descrizione'}
-                        </p>
-                        <div className="flex items-center space-x-4 mt-2">
-                          <span className="text-xs text-gray-500">
-                            {new Date(project.created_at).toLocaleDateString('it-IT')}
-                          </span>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            project.type === 'professional' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                          }`}>
-                            {project.type === 'professional' ? 'Professionale' : 'Standard'}
-                          </span>
+              projects.slice(0, 5).map((project) => (
+                <div key={project.id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      {editingProject === project.id ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                            className="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Nome progetto"
+                            autoFocus
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                saveTitle(project.id)
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={() => saveTitle(project.id)}
+                            className="text-green-600 hover:text-green-800"
+                            title="Salva"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="text-gray-600 hover:text-gray-800"
+                            title="Annulla"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      {project.score > 0 && (
-                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(project.score)}`}>
-                          {project.score}/100
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+                            <div className="flex items-center space-x-4 mt-1">
+                              <span className="text-sm text-gray-500">
+                                {new Date(project.created_at).toLocaleDateString('it-IT')}
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                project.type === 'professional' ? 'bg-purple-100 text-purple-600' :
+                                project.type === 'guided' ? 'bg-blue-100 text-blue-600' :
+                                'bg-green-100 text-green-600'
+                              }`}>
+                                {project.type === 'professional' ? 'Professionale' :
+                                 project.type === 'guided' ? 'Guidata' : 'Documento'}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => startEditing(project)}
+                            className="text-gray-400 hover:text-blue-600 transition-colors"
+                            title="Rinomina progetto"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
                         </div>
                       )}
-                      <ArrowRight className="w-5 h-5 text-gray-400" />
+                    </div>
+                    
+                    <div className="flex items-center space-x-3 ml-4">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(project.score)} ${getScoreColor(project.score)}`}>
+                        {project.score}/100
+                      </span>
+                      
+                      <button
+                        onClick={() => openEditModal(project)}
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                        title="Modifica progetto"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      
+                      <button
+                        onClick={() => router.push(`/dashboard/analysis/${project.analysis_id}`)}
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                        title="Visualizza analisi"
+                      >
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                      
+                      <button
+                        onClick={() => confirmDelete(project)}
+                        className="text-red-600 hover:text-red-800 transition-colors"
+                        title="Elimina progetto"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))
             )}
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && selectedProject && (
+        <ProjectEditModal
+          project={selectedProject}
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false)
+            setSelectedProject(null)
+          }}
+          onSave={saveProjectChanges}
+        />
+      )}
     </div>
   )
 }
