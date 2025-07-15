@@ -5,7 +5,11 @@ import { Upload, FileText, X, AlertCircle, CheckCircle, BarChart3, Download } fr
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
-export default function DocumentAnalyzer() {
+interface DocumentAnalyzerProps {
+  onAnalysisComplete?: (analysis: any) => void
+}
+
+export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyzerProps = {}) {
   const [dragActive, setDragActive] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [analyzing, setAnalyzing] = useState(false)
@@ -165,6 +169,11 @@ export default function DocumentAnalyzer() {
         })
 
         setAnalysisResult(completeAnalysisData)
+
+        // Chiama il callback se fornito
+        if (onAnalysisComplete) {
+          onAnalysisComplete(completeAnalysisData)
+        }
 
         // Redirect alla pagina di analisi professionale
         setTimeout(() => {
