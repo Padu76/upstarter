@@ -334,3 +334,4 @@ class AirtableService {
 
 const airtableService = new AirtableService()
 export default airtableService
+export { AirtableService }
