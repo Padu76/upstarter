@@ -1,272 +1,314 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { IdeaAnalysisInput } from '@/lib/claude'
 import airtableService from '@/lib/airtable'
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    console.log('🚀 Loading projects from Airtable...')
+    
+    // Verifica autenticazione
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+      console.log('❌ No authenticated user found')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { text, fileName } = await request.json()
+    const userEmail = session.user.email
+    console.log('✅ User authenticated:', userEmail)
 
-    if (!text || text.trim().length === 0) {
-      return NextResponse.json({ error: 'Testo del documento mancante' }, { status: 400 })
-    }
+    // STEP 1: Carica progetti da Airtable
+    console.log('📦 Step 1: Loading projects from Airtable...')
+    
+    let airtableProjects = []
+    let airtableStats = null
+    let airtableError = null
 
-    console.log('Analyzing document:', { fileName, textLength: text.length, userEmail: session.user?.email })
-
-    // Estrai informazioni strutturate dal testo
-    const extractedInfo = await extractBusinessInfoSimple(text)
-
-    if (!extractedInfo) {
-      return NextResponse.json({ 
-        error: 'Il documento deve contenere almeno 50 caratteri di testo significativo' 
-      }, { status: 400 })
-    }
-
-    console.log('Extracted info:', extractedInfo.title)
-
-    // Genera analisi (prima prova Claude, poi fallback)
-    let analysis
     try {
-      // Prova analisi professionale solo se API key è presente
-      if (process.env.ANTHROPIC_API_KEY) {
-        const { analyzeProfessionalStartup } = await import('@/lib/claude-professional')
-        analysis = await analyzeProfessionalStartup(extractedInfo)
-        console.log('Professional analysis completed')
-      } else {
-        throw new Error('ANTHROPIC_API_KEY not configured')
-      }
-    } catch (analysisError) {
-      console.error('Professional analysis failed, using fallback:', analysisError)
+      // Carica progetti dell'utente
+      const rawProjects = await airtableService.getProjectsByUser(userEmail)
+      console.log('✅ Raw projects loaded:', rawProjects.length)
+
+      // Trasforma dati Airtable in formato compatibile
+      airtableProjects = rawProjects.map(record => ({
+        id: record.id,
+        title: record.fields.title,
+        description: record.fields.description,
+        score: record.fields.score || 0,
+        status: record.fields.status,
+        type: record.fields.type,
+        source: record.fields.source,
+        source_file: record.fields.source_file,
+        created_at: record.fields.created_at,
+        updated_at: record.fields.updated_at,
+        user_email: userEmail
+      }))
+
+      // Carica statistiche
+      airtableStats = await airtableService.getProjectStats(userEmail)
+      console.log('✅ Stats loaded:', airtableStats)
+
+    } catch (error) {
+      console.error('⚠️ Airtable load failed:', error)
+      airtableError = error
+    }
+
+    // STEP 2: Fallback a localStorage se Airtable fallisce
+    let localStorageProjects = []
+    
+    if (airtableProjects.length === 0) {
+      console.log('📱 Step 2: Airtable empty, checking localStorage fallback...')
       
-      // Fallback: analisi mock professionale
-      analysis = generateMockProfessionalAnalysis(extractedInfo)
-      console.log('Using mock analysis fallback')
-    }
-
-    // Genera un ID temporaneo
-    let projectId = `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    let savedToDatabase = false
-
-    // Salva in Airtable se configurato
-    if (process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID) {
       try {
-        console.log('Saving to Airtable...')
-        
-        // Inizializza/trova utente
-        const user = await airtableService.initializeUser(
-          session.user.email!,
-          session.user.name || undefined
-        )
-        
-        // Crea progetto
-        const projectData = {
-          user_id: user.id!,
-          title: extractedInfo.title,
-          description: extractedInfo.description,
-          score: analysis.overall_score,
-          status: 'analyzed' as const,
-          type: 'professional' as const,
-          source: 'document_professional' as const,
-          source_file: fileName || 'Documento caricato',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-        
-        const savedProject = await airtableService.createProject(projectData)
-        projectId = savedProject.id!
-        
-        // Salva analisi dettagliata
-        await airtableService.createAnalysis({
-          project_id: projectId,
-          overall_score: analysis.overall_score,
-          analysis_data: JSON.stringify(analysis),
-          created_at: new Date().toISOString()
-        })
-        
-        savedToDatabase = true
-        console.log('Successfully saved to Airtable:', projectId)
-        
-      } catch (airtableError) {
-        console.error('Error saving to Airtable:', airtableError)
-        // Continua con localStorage fallback
+        // Restituisci istruzioni per localStorage (client-side)
+        localStorageProjects = []
+        console.log('ℹ️ Client should check localStorage for fallback data')
+      } catch (error) {
+        console.error('⚠️ LocalStorage fallback failed:', error)
       }
     }
 
-    // Prepara dati per il client
-    const projectData = {
-      id: projectId,
-      title: extractedInfo.title,
-      description: extractedInfo.description,
-      score: analysis.overall_score,
-      status: 'analyzed',
-      type: 'professional',
-      source: 'document_professional',
-      source_file: fileName || 'Documento caricato',
-      user_email: session.user?.email || '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      saved_to_database: savedToDatabase
+    // STEP 3: Combina risultati
+    const allProjects = [...airtableProjects, ...localStorageProjects]
+    
+    // Ordina per data di creazione (più recenti prima)
+    allProjects.sort((a, b) => {
+      const dateA = new Date(a.created_at || '').getTime()
+      const dateB = new Date(b.created_at || '').getTime()
+      return dateB - dateA
+    })
+
+    console.log('📊 Final projects count:', allProjects.length)
+
+    // STEP 4: Calcola statistiche finali
+    const finalStats = airtableStats || {
+      total: allProjects.length,
+      analyzed: allProjects.filter(p => p.status === 'analyzed').length,
+      draft: allProjects.filter(p => p.status === 'draft').length,
+      archived: allProjects.filter(p => p.status === 'archived').length,
+      avgScore: allProjects.length > 0 ? 
+        Math.round(allProjects.reduce((acc, p) => acc + p.score, 0) / allProjects.length) : 0
     }
 
-    const analysisData = {
-      id: projectId,
-      analysis: analysis,
-      extractedInfo,
-      fileName,
-      timestamp: new Date().toISOString(),
-      type: 'professional'
-    }
+    console.log('🎉 Projects loaded successfully!')
 
     return NextResponse.json({
       success: true,
-      analysis: analysis,
-      extractedInfo,
-      projectId,
-      fileName,
-      analysisData,
-      projectData,
-      type: 'professional',
-      savedToDatabase
+      projects: allProjects,
+      stats: finalStats,
+      data_source: {
+        airtable: airtableProjects.length,
+        localStorage: localStorageProjects.length,
+        error: airtableError ? airtableError.message : null
+      },
+      user: {
+        email: userEmail,
+        name: session.user.name
+      }
     })
 
   } catch (error) {
-    console.error('Errore generale analisi documento:', error)
+    console.error('❌ Error in projects API:', error)
+    
     return NextResponse.json({ 
-      error: 'Errore durante l\'analisi del documento. Riprova più tardi.' 
+      error: 'Errore durante il caricamento dei progetti',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      projects: [],
+      stats: { total: 0, analyzed: 0, draft: 0, archived: 0, avgScore: 0 }
     }, { status: 500 })
   }
 }
 
-async function extractBusinessInfoSimple(text: string): Promise<IdeaAnalysisInput | null> {
+export async function POST(request: NextRequest) {
   try {
-    // Validazione testo minimo
-    if (text.trim().length < 50) {
-      console.log('Testo troppo corto:', text.length)
-      return null
+    console.log('🆕 Creating new project...')
+    
+    // Verifica autenticazione
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const lines = text.split('\n').filter(line => line.trim().length > 0)
-    const firstLine = lines[0] || 'Progetto Startup'
-    
-    // Estrae il titolo
-    const title = firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine
-    
-    // Usa i primi paragrafi come descrizione
-    const description = text.substring(0, 300).trim() + (text.length > 300 ? '...' : '')
-    
-    const extractedInfo: IdeaAnalysisInput = {
-      title: title || 'Progetto Startup',
-      description: description || 'Progetto imprenditoriale da analizzare',
-      questionnaire: {
-        target_market: extractKeywordContent(text, ['mercato', 'clienti', 'target']) || 'Mercato da definire meglio',
-        value_proposition: extractKeywordContent(text, ['valore', 'vantaggio', 'beneficio']) || 'Value proposition da sviluppare',
-        business_model: extractKeywordContent(text, ['ricavi', 'business model', 'monetizzazione']) || 'Modello di business da strutturare',
-        competitive_advantage: extractKeywordContent(text, ['competitivo', 'differenziazione', 'innovazione']) || 'Vantaggio competitivo da evidenziare',
-        team_experience: extractKeywordContent(text, ['team', 'esperienza', 'competenze']) || 'Esperienza del team da descrivere',
-        funding_needed: extractKeywordContent(text, ['finanziamento', 'capitale', 'investimento']) || 'Finanziamenti da quantificare',
-        timeline: extractKeywordContent(text, ['tempo', 'sviluppo', 'roadmap']) || 'Timeline da pianificare',
-        main_challenges: extractKeywordContent(text, ['sfide', 'rischi', 'difficoltà']) || 'Sfide principali da identificare'
-      }
+    const userEmail = session.user.email
+    const { title, description, source, type = 'standard' } = await request.json()
+
+    if (!title || !description) {
+      return NextResponse.json({ error: 'Title and description are required' }, { status: 400 })
     }
-    
-    console.log('Simple extraction completed for:', title)
-    return extractedInfo
+
+    // Crea progetto in Airtable
+    try {
+      const savedProject = await airtableService.createProject({
+        title,
+        description,
+        source: source || 'form',
+        status: 'draft',
+        score: 0,
+        type
+      }, userEmail)
+
+      console.log('✅ Project created in Airtable:', savedProject.id)
+
+      const projectData = {
+        id: savedProject.id,
+        title: savedProject.fields.title,
+        description: savedProject.fields.description,
+        score: savedProject.fields.score,
+        status: savedProject.fields.status,
+        type: savedProject.fields.type,
+        source: savedProject.fields.source,
+        created_at: savedProject.fields.created_at,
+        updated_at: savedProject.fields.updated_at,
+        user_email: userEmail
+      }
+
+      return NextResponse.json({
+        success: true,
+        project: projectData,
+        saved_to_airtable: true
+      })
+
+    } catch (airtableError) {
+      console.error('⚠️ Airtable save failed:', airtableError)
+      
+      // Fallback: restituisci progetto con ID temporaneo
+      const tempProject = {
+        id: `proj_${Date.now()}`,
+        title,
+        description,
+        score: 0,
+        status: 'draft',
+        type,
+        source: source || 'form',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_email: userEmail
+      }
+
+      return NextResponse.json({
+        success: true,
+        project: tempProject,
+        saved_to_airtable: false,
+        error: 'Saved locally, sync to Airtable failed'
+      })
+    }
 
   } catch (error) {
-    console.error('Errore estrazione semplice:', error)
-    return null
+    console.error('❌ Error creating project:', error)
+    return NextResponse.json({ 
+      error: 'Errore durante la creazione del progetto',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
-function extractKeywordContent(text: string, keywords: string[]): string | null {
-  const lowerText = text.toLowerCase()
-  
-  for (const keyword of keywords) {
-    const index = lowerText.indexOf(keyword.toLowerCase())
-    if (index !== -1) {
-      const start = Math.max(0, index - 100)
-      const end = Math.min(text.length, index + 200)
-      const extract = text.substring(start, end).trim()
+export async function DELETE(request: NextRequest) {
+  try {
+    console.log('🗑️ Deleting project...')
+    
+    // Verifica autenticazione
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const projectId = searchParams.get('id')
+
+    if (!projectId) {
+      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    }
+
+    // Elimina da Airtable
+    try {
+      const deleted = await airtableService.deleteProject(projectId)
       
-      if (extract.length > 20) {
-        return extract
+      if (deleted) {
+        console.log('✅ Project deleted from Airtable:', projectId)
+        return NextResponse.json({
+          success: true,
+          message: 'Project deleted successfully',
+          deleted_from_airtable: true
+        })
+      } else {
+        throw new Error('Deletion failed')
       }
+
+    } catch (airtableError) {
+      console.error('⚠️ Airtable delete failed:', airtableError)
+      
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to delete from Airtable',
+        details: airtableError instanceof Error ? airtableError.message : 'Unknown error'
+      }, { status: 500 })
     }
+
+  } catch (error) {
+    console.error('❌ Error deleting project:', error)
+    return NextResponse.json({ 
+      error: 'Errore durante l\'eliminazione del progetto',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
-  
-  return null
 }
 
-function generateMockProfessionalAnalysis(extractedInfo: IdeaAnalysisInput) {
-  return {
-    overall_score: 75,
-    executive_summary: {
-      key_insights: [
-        "Il progetto presenta elementi interessanti per il mercato di riferimento",
-        "Necessario approfondire la strategia go-to-market e la validazione clienti",
-        "Il timing di mercato sembra favorevole per questo tipo di soluzione"
-      ],
-      main_concerns: [
-        "Validazione del product-market fit ancora da completare",
-        "Competizione nel settore che richiede differenziazione chiara",
-        "Necessità di definire meglio il modello di monetizzazione"
-      ],
-      investment_recommendation: "Il progetto presenta potenziale interessante ma necessita di ulteriori sviluppi nella strategia di business e validazione di mercato prima di considerare investimenti significativi.",
-      berkus_score: 72,
-      scorecard_score: 78
-    },
-    market_analysis: {
-      score: 70,
-      tam_sam_som_analysis: "Analisi di mercato da approfondire con dati specifici su TAM, SAM e SOM del settore di riferimento.",
-      porter_five_forces: "Valutazione competitiva necessaria per analizzare le forze di Porter nel settore specifico.",
-      competitive_landscape: "Mappatura dei competitor diretti e indiretti da completare per posizionamento strategico.",
-      market_segmentation: "Segmentazione clienti da definire con personas specifiche e comportamenti d'acquisto.",
-      market_timing: "Timing di mercato favorevole ma necessita validazione attraverso customer discovery.",
-      barriers_entry: "Barriere all'ingresso da valutare in base al settore e alla tecnologia utilizzata.",
-      pros: [
-        "Mercato potenzialmente in crescita",
-        "Opportunità di innovazione nel settore",
-        "Possibile vantaggio first-mover"
-      ],
-      cons: [
-        "Dimensioni mercato da validare",
-        "Concorrenza potenzialmente intensa",
-        "Cicli di vendita da verificare"
-      ],
-      recommendations: [
-        "Condurre ricerca di mercato approfondita",
-        "Validare le assunzioni sui clienti target",
-        "Analizzare la concorrenza esistente"
-      ]
-    },
-    business_model_analysis: {
-      score: 68,
-      business_model_canvas: "Business Model Canvas da completare con tutti i 9 blocchi: Value Proposition, Customer Segments, Channels, Customer Relationships, Revenue Streams, Key Resources, Key Activities, Key Partnerships, Cost Structure.",
-      unit_economics: "Unit economics da definire con calcoli LTV/CAC, contribution margin e payback period.",
-      revenue_model_analysis: "Modello di ricavi da strutturare con pricing strategy e prevedibilità cash flow.",
-      scalability_assessment: "Scalabilità del business da valutare in termini di margini e network effects.",
-      pricing_strategy: "Strategia di pricing da sviluppare basata su value proposition e competitive analysis.",
-      pros: [
-        "Potenziale di scalabilità del modello",
-        "Opportunità di ricavi ricorrenti",
-        "Struttura costi variabili favorevole"
-      ],
-      cons: [
-        "Monetizzazione da validare",
-        "Customer acquisition cost da ottimizzare",
-        "Pricing power da dimostrare"
-      ],
-      recommendations: [
-        "Definire chiaramente il modello di ricavi",
-        "Testare diverse strategie di pricing",
-        "Calcolare unit economics dettagliate"
-      ]
+export async function PUT(request: NextRequest) {
+  try {
+    console.log('📝 Updating project...')
+    
+    // Verifica autenticazione
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const { id, ...updates } = await request.json()
+
+    if (!id) {
+      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    }
+
+    // Aggiorna in Airtable
+    try {
+      const updatedProject = await airtableService.updateProject(id, updates)
+      
+      console.log('✅ Project updated in Airtable:', id)
+
+      const projectData = {
+        id: updatedProject.id,
+        title: updatedProject.fields.title,
+        description: updatedProject.fields.description,
+        score: updatedProject.fields.score,
+        status: updatedProject.fields.status,
+        type: updatedProject.fields.type,
+        source: updatedProject.fields.source,
+        created_at: updatedProject.fields.created_at,
+        updated_at: updatedProject.fields.updated_at,
+        user_email: session.user.email
+      }
+
+      return NextResponse.json({
+        success: true,
+        project: projectData,
+        updated_in_airtable: true
+      })
+
+    } catch (airtableError) {
+      console.error('⚠️ Airtable update failed:', airtableError)
+      
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to update in Airtable',
+        details: airtableError instanceof Error ? airtableError.message : 'Unknown error'
+      }, { status: 500 })
+    }
+
+  } catch (error) {
+    console.error('❌ Error updating project:', error)
+    return NextResponse.json({ 
+      error: 'Errore durante l\'aggiornamento del progetto',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
