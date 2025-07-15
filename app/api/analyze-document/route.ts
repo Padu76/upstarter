@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { IdeaAnalysisInput } from '@/lib/claude'
 import airtableService from '@/lib/airtable'
 
 export async function POST(request: NextRequest) {
@@ -190,10 +189,11 @@ async function performProfessionalAnalysis(extractedInfo: any, text: string): Pr
     // Importa il servizio Claude professionale
     const { analyzeProfessionalStartup } = await import('@/lib/claude-professional')
     
-    const input: any = {
+    // Input senza interface
+    const input = {
       businessIdea: extractedInfo.title,
       targetMarket: 'Da definire',
-      businessModel: 'Da definire', 
+      businessModel: 'Da definire',
       competitiveAdvantage: 'Da definire',
       teamBackground: 'Da definire',
       fundingNeeds: 'Da definire',
