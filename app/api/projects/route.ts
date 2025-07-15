@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     // STEP 2: Fallback a localStorage se Airtable fallisce
-    let localStorageProjects = []
+    let localStorageProjects: any[] = []
     
     if (airtableProjects.length === 0) {
       console.log('📱 Step 2: Airtable empty, checking localStorage fallback...')
