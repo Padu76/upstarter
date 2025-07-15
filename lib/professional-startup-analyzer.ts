@@ -1,4 +1,4 @@
-// Analizzatore professionale startup - Versione semplificata
+// Analizzatore professionale startup - Versione completa con Executive Summary
 export interface StartupAnalysisResult {
   overall_score: number
   valuation_range: {
@@ -18,6 +18,7 @@ export interface StartupAnalysisResult {
   recommendations: string[]
   missing_areas: string[]
   next_steps: any
+  executive_summary: string
 }
 
 export class ProfessionalStartupAnalyzer {
@@ -57,6 +58,9 @@ export class ProfessionalStartupAnalyzer {
     const missingAreas = this.identifyMissingAreas(extractedData)
     const nextSteps = this.generateNextSteps(overallScore, investmentReadiness)
     
+    // Genera Executive Summary dettagliato
+    const executiveSummary = this.generateExecutiveSummary(extractedData, overallScore, valuationRange)
+    
     return {
       overall_score: overallScore,
       valuation_range: valuationRange,
@@ -71,7 +75,8 @@ export class ProfessionalStartupAnalyzer {
       investment_readiness: investmentReadiness,
       recommendations,
       missing_areas: missingAreas,
-      next_steps: nextSteps
+      next_steps: nextSteps,
+      executive_summary: executiveSummary
     }
   }
   
@@ -645,5 +650,263 @@ export class ProfessionalStartupAnalyzer {
         timeline: '6-8 settimane'
       }
     }
+  }
+
+  private generateExecutiveSummary(data: any, overallScore: number, valuationRange: any): string {
+    const projectType = this.identifyProjectType(data)
+    const keyStrengths = this.identifyKeyStrengths(data, overallScore)
+    const criticalWeaknesses = this.identifyCriticalWeaknesses(data, overallScore)
+    const marketPotential = this.assessMarketPotential(data)
+    
+    let summary = `## Executive Summary - Analisi Professionale\n\n`
+    
+    // Apertura e contesto
+    summary += `Il progetto analizzato rappresenta ${projectType} con un potenziale ${this.getMarketPotentialText(marketPotential)} nel settore di riferimento. `
+    summary += `Attraverso un'analisi approfondita utilizzando metodologie VC professionali (Berkus Method, Scorecard Analysis, Risk Factor Assessment), `
+    summary += `la startup ha conseguito un punteggio complessivo di ${overallScore}/100, posizionandosi nella categoria ${this.getScoreCategory(overallScore)}.\n\n`
+    
+    // Valutazione economica
+    summary += `### Valutazione Economica\n`
+    summary += `L'analisi di valutazione indica un range di ${this.formatCurrency(valuationRange.min)} - ${this.formatCurrency(valuationRange.max)}, `
+    summary += `con una valutazione raccomandata di ${this.formatCurrency(valuationRange.recommended)}. `
+    summary += `Questa stima si basa su una combinazione di fattori qualitativi e quantitativi, includendo il potenziale di mercato, `
+    summary += `la forza del team, l'innovazione del prodotto e la sostenibilità del modello di business.\n\n`
+    
+    // Punti di forza
+    summary += `### Punti di Forza Identificati\n`
+    keyStrengths.forEach(strength => {
+      summary += `• ${strength}\n`
+    })
+    summary += `\n`
+    
+    // Aree di miglioramento
+    summary += `### Aree Critiche di Miglioramento\n`
+    criticalWeaknesses.forEach(weakness => {
+      summary += `• ${weakness}\n`
+    })
+    summary += `\n`
+    
+    // Analisi di mercato
+    summary += `### Contesto di Mercato\n`
+    summary += `L'analisi di mercato rivela ${this.getMarketAnalysisText(data)}. `
+    summary += `Il posizionamento competitivo ${this.getCompetitivePositionText(data)}, `
+    summary += `mentre le barriere all'ingresso ${this.getBarriersText(data)}. `
+    summary += `La validazione del product-market fit ${this.getPMFText(data)}.\n\n`
+    
+    // Rischi principali
+    summary += `### Profilo di Rischio\n`
+    summary += `I principali fattori di rischio identificati includono ${this.getRiskAnalysisText(data)}. `
+    summary += `Tuttavia, questi rischi sono ${this.getRiskMitigationText(data)} attraverso strategie mirate `
+    summary += `e un'esecuzione accurata del piano di sviluppo.\n\n`
+    
+    // Raccomandazioni strategiche
+    summary += `### Raccomandazioni Strategiche\n`
+    summary += `Per massimizzare il potenziale di successo, si raccomanda di: `
+    summary += `${this.getStrategicRecommendationsText(data, overallScore)}. `
+    summary += `Particolare attenzione dovrebbe essere rivolta ${this.getFocusAreasText(data, overallScore)}.\n\n`
+    
+    // Conclusioni
+    summary += `### Conclusioni\n`
+    summary += `${this.getConclusionText(overallScore, data)} `
+    summary += `Con gli opportuni miglioramenti nelle aree identificate, il progetto presenta ${this.getOverallPotentialText(overallScore)} `
+    summary += `per attrarre investimenti e raggiungere una crescita sostenibile nel mercato di riferimento.`
+    
+    return summary
+  }
+  
+  private identifyProjectType(data: any): string {
+    if (data.hasTechnology && data.hasProductInfo) {
+      return "una startup tecnologica innovativa"
+    } else if (data.hasBusinessModel && data.hasMarketAnalysis) {
+      return "un'iniziativa imprenditoriale strutturata"
+    } else if (data.hasProductInfo) {
+      return "un progetto di prodotto/servizio"
+    } else {
+      return "un'idea imprenditoriale in fase di definizione"
+    }
+  }
+  
+  private getMarketPotentialText(potential: number): string {
+    if (potential > 80) return "straordinario"
+    if (potential > 60) return "significativo" 
+    if (potential > 40) return "interessante"
+    return "da validare"
+  }
+  
+  private getScoreCategory(score: number): string {
+    if (score >= 80) return "eccellente con prospettive di investimento immediate"
+    if (score >= 70) return "molto promettente con solide fondamenta"
+    if (score >= 60) return "promettente con aree di miglioramento identificate"
+    if (score >= 50) return "intermedia con necessità di sviluppi significativi"
+    return "iniziale richiedente approfondimenti sostanziali"
+  }
+  
+  private identifyKeyStrengths(data: any, score: number): string[] {
+    const strengths = []
+    
+    if (data.hasMarketAnalysis) {
+      strengths.push("Comprensione solida del mercato di riferimento con identificazione chiara del target")
+    }
+    if (data.hasTechnology) {
+      strengths.push("Componente tecnologica innovativa con potenziale di differenziazione competitiva")
+    }
+    if (data.hasBusinessModel) {
+      strengths.push("Modello di business delineato con fonti di ricavo identificate")
+    }
+    if (data.hasTeamInfo) {
+      strengths.push("Presenza di un team con competenze rilevanti per l'esecuzione del progetto")
+    }
+    if (data.hasCompetitiveAnalysis) {
+      strengths.push("Analisi competitiva che dimostra consapevolezza del panorama concorrenziale")
+    }
+    
+    if (score > 70) {
+      strengths.push("Punteggio complessivo elevato che indica una preparazione avanzata per il mercato")
+    }
+    
+    if (data.contentLength > 5000) {
+      strengths.push("Documentazione completa che evidenzia un approccio strutturato alla pianificazione")
+    }
+    
+    return strengths.length > 0 ? strengths : ["Fondamenta del progetto con potenziale di sviluppo"]
+  }
+  
+  private identifyCriticalWeaknesses(data: any, score: number): string[] {
+    const weaknesses = []
+    
+    if (!data.hasMarketAnalysis) {
+      weaknesses.push("Mancanza di ricerca di mercato quantitativa per validare le dimensioni del TAM/SAM/SOM")
+    }
+    if (!data.hasCompetitiveAnalysis) {
+      weaknesses.push("Analisi competitiva insufficiente per identificare positioning e vantaggio competitivo sostenibile")
+    }
+    if (!data.hasFinancialProjections) {
+      weaknesses.push("Assenza di proiezioni finanziarie dettagliate e modello di unit economics validato")
+    }
+    if (!data.hasTeamInfo) {
+      weaknesses.push("Informazioni limitate sul team e assenza di advisory board qualificato")
+    }
+    if (!data.hasBusinessModel) {
+      weaknesses.push("Modello di business e strategia di monetizzazione non sufficientemente sviluppati")
+    }
+    
+    if (score < 60) {
+      weaknesses.push("Punteggio complessivo che indica necessità di sviluppi significativi prima dell'investment readiness")
+    }
+    
+    return weaknesses.length > 0 ? weaknesses : ["Necessità di approfondimenti per ottimizzare il potenziale del progetto"]
+  }
+  
+  private assessMarketPotential(data: any): number {
+    let potential = 50 // Base
+    
+    if (data.hasMarketAnalysis) potential += 20
+    if (data.hasCompetitiveAnalysis) potential += 15
+    if (data.contentLength > 3000) potential += 10
+    if (data.sections.length > 8) potential += 5
+    
+    return Math.min(potential, 100)
+  }
+  
+  private getMarketAnalysisText(data: any): string {
+    if (data.hasMarketAnalysis) {
+      return "un mercato con caratteristiche attrattive e dimensioni significative, benché necessiti di quantificazione più precisa"
+    }
+    return "la necessità di approfondire la ricerca di mercato per validare le opportunità commerciali"
+  }
+  
+  private getCompetitivePositionText(data: any): string {
+    if (data.hasCompetitiveAnalysis) {
+      return "mostra potenziale di differenziazione, richiedendo tuttavia consolidamento del vantaggio competitivo"
+    }
+    return "necessita di definizione attraverso un'analisi strutturata dei competitor diretti e indiretti"
+  }
+  
+  private getBarriersText(data: any): string {
+    if (data.hasTechnology) {
+      return "presentano opportunità di protezione attraverso know-how tecnologico e proprietà intellettuale"
+    }
+    return "richiedono sviluppo strategico per creare difendibilità nel tempo"
+  }
+  
+  private getPMFText(data: any): string {
+    if (data.hasProductInfo && data.hasMarketAnalysis) {
+      return "presenta indicatori iniziali positivi che necessitano di validazione empirica con clienti target"
+    }
+    return "rimane da dimostrare attraverso ricerca di mercato e feedback degli utenti"
+  }
+  
+  private getRiskAnalysisText(data: any): string {
+    const risks = []
+    if (!data.hasTeamInfo) risks.push("rischio di esecuzione legato alla composizione del team")
+    if (!data.hasMarketAnalysis) risks.push("rischio di mercato per validazione insufficiente della domanda")
+    if (!data.hasTechnology) risks.push("rischio tecnologico per specifiche implementative non definite")
+    if (!data.hasFinancialProjections) risks.push("rischio finanziario per sostenibilità economica non dimostrata")
+    
+    return risks.length > 0 ? risks.join(", ") : "fattori di rischio gestibili con appropriata pianificazione"
+  }
+  
+  private getRiskMitigationText(data: any): string {
+    if (data.contentLength > 5000) {
+      return "mitigabili attraverso la strutturazione già dimostrata nel documento"
+    }
+    return "affrontabili con sviluppo strutturato delle aree mancanti"
+  }
+  
+  private getStrategicRecommendationsText(data: any, score: number): string {
+    const priorities = []
+    
+    if (!data.hasMarketAnalysis) priorities.push("completare la ricerca di mercato con analisi TAM/SAM/SOM")
+    if (!data.hasFinancialProjections) priorities.push("sviluppare proiezioni finanziarie e unit economics")
+    if (!data.hasTeamInfo) priorities.push("rafforzare il team con competenze complementari")
+    if (score < 70) priorities.push("implementare un piano di validazione del product-market fit")
+    
+    return priorities.join(", ")
+  }
+  
+  private getFocusAreasText(data: any, score: number): string {
+    if (!data.hasMarketAnalysis) {
+      return "alla validazione empirica della domanda di mercato attraverso interviste e sondaggi"
+    }
+    if (!data.hasFinancialProjections) {
+      return "allo sviluppo di un modello finanziario robusto con scenario analysis"
+    }
+    if (score < 60) {
+      return "al consolidamento delle fondamenta del business model"
+    }
+    return "all'ottimizzazione degli elementi di forza già identificati"
+  }
+  
+  private getConclusionText(score: number, data: any): string {
+    if (score >= 80) {
+      return "Il progetto dimostra una maturità eccellente e risulta pronto per approcci di investimento strutturati."
+    }
+    if (score >= 70) {
+      return "Il progetto presenta solide fondamenta con prospettive molto promettenti per il successo commerciale."
+    }
+    if (score >= 60) {
+      return "Il progetto mostra potenziale significativo, richiedendo sviluppi mirati nelle aree identificate."
+    }
+    if (score >= 50) {
+      return "Il progetto ha merito imprenditoriale, necessitando di approfondimenti sostanziali prima dell'investment readiness."
+    }
+    return "Il progetto presenta spunti interessanti che richiedono sviluppo strutturato per raggiungere la maturità commerciale."
+  }
+  
+  private getOverallPotentialText(score: number): string {
+    if (score >= 80) return "eccellenti prospettive"
+    if (score >= 70) return "ottime possibilità"
+    if (score >= 60) return "buone opportunità"
+    if (score >= 50) return "discrete possibilità"
+    return "potenziale da sviluppare"
+  }
+  
+  private formatCurrency(amount: number): string {
+    if (amount >= 1000000) {
+      return `€${(amount / 1000000).toFixed(1)}M`
+    } else if (amount >= 1000) {
+      return `€${(amount / 1000).toFixed(0)}K`
+    }
+    return `€${amount.toLocaleString()}`
   }
 }
