@@ -30,6 +30,7 @@ interface ProfessionalAnalysis {
   recommendations: string[]
   missing_areas: string[]
   next_steps: any
+  executive_summary?: string
 }
 
 export default function ProfessionalAnalysisPage() {
@@ -201,6 +202,16 @@ export default function ProfessionalAnalysisPage() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {activeTab === 'overview' && (
           <div className="space-y-8">
+            {/* Executive Summary */}
+            {professionalData.executive_summary && (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Executive Summary</h3>
+                <div className="prose max-w-none text-gray-700">
+                  <div className="whitespace-pre-line">{professionalData.executive_summary}</div>
+                </div>
+              </div>
+            )}
+
             {/* Score Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white rounded-xl shadow-lg p-6">
@@ -284,7 +295,7 @@ export default function ProfessionalAnalysisPage() {
                   {formatCurrency(professionalData.berkus_analysis.total_valuation)}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {professionalData.berkus_analysis.summary}
+                  {professionalData.berkus_analysis.summary || 'Valutazione basata su 5 fattori chiave'}
                 </div>
               </div>
 
@@ -297,7 +308,7 @@ export default function ProfessionalAnalysisPage() {
                   {professionalData.scorecard_analysis.weighted_score}/100
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {professionalData.scorecard_analysis.summary}
+                  {professionalData.scorecard_analysis.summary || 'Score ponderato per fattori'}
                 </div>
               </div>
 
@@ -323,7 +334,7 @@ export default function ProfessionalAnalysisPage() {
                   {professionalData.risk_factor_analysis.total_risk_adjustment > 0 ? '+' : ''}{professionalData.risk_factor_analysis.total_risk_adjustment}%
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {professionalData.risk_factor_analysis.summary}
+                  {professionalData.risk_factor_analysis.summary || 'Aggiustamento per rischi'}
                 </div>
               </div>
             </div>
@@ -448,6 +459,525 @@ export default function ProfessionalAnalysisPage() {
           </div>
         )}
 
+        {activeTab === 'market' && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Analisi di Mercato</h3>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-sm text-blue-600 font-medium mb-1">TAM</div>
+                  <div className="text-2xl font-bold text-blue-700">
+                    {formatCurrency(professionalData.market_analysis.tam_analysis.size)}
+                  </div>
+                  <div className="text-xs text-blue-500 mt-1">
+                    {professionalData.market_analysis.tam_analysis.confidence}% confidence
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-sm text-green-600 font-medium mb-1">SAM</div>
+                  <div className="text-2xl font-bold text-green-700">
+                    {formatCurrency(professionalData.market_analysis.sam_analysis.size)}
+                  </div>
+                  <div className="text-xs text-green-500 mt-1">
+                    {professionalData.market_analysis.sam_analysis.confidence}% confidence
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-sm text-purple-600 font-medium mb-1">SOM</div>
+                  <div className="text-2xl font-bold text-purple-700">
+                    {formatCurrency(professionalData.market_analysis.som_analysis.size)}
+                  </div>
+                  <div className="text-xs text-purple-500 mt-1">
+                    {professionalData.market_analysis.som_analysis.confidence}% confidence
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2">Crescita di Mercato</h4>
+                  <div className="text-2xl font-bold text-green-600 mb-1">
+                    {professionalData.market_analysis.market_growth.rate}%
+                  </div>
+                  <p className="text-sm text-gray-600">{professionalData.market_analysis.market_growth.reasoning}</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2">Maturità Mercato</h4>
+                  <div className="text-lg font-bold text-blue-600 mb-1">
+                    {professionalData.market_analysis.market_maturity.stage}
+                  </div>
+                  <p className="text-sm text-gray-600">{professionalData.market_analysis.market_maturity.reasoning}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'competitive' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Analisi Competitiva Dettagliata</h3>
+              
+              {/* Posizione Competitiva */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Posizionamento Competitivo</h4>
+                <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Score Posizionamento:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.competitive_analysis.competitive_position.score)} ${getScoreColor(professionalData.competitive_analysis.competitive_position.score)}`}>
+                      {professionalData.competitive_analysis.competitive_position.score}/100
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700">{professionalData.competitive_analysis.competitive_position.reasoning}</p>
+                </div>
+              </div>
+
+              {/* Differenziazione */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Fattori di Differenziazione</h4>
+                <div className="bg-green-50 p-4 rounded-lg mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Score Differenziazione:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.competitive_analysis.differentiation.score)} ${getScoreColor(professionalData.competitive_analysis.differentiation.score)}`}>
+                      {professionalData.competitive_analysis.differentiation.score}/100
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Fattori Unici Identificati:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {professionalData.competitive_analysis.differentiation.unique_factors.map((factor: string, index: number) => (
+                        <li key={index} className="text-sm text-gray-600">{factor}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Barriere all'Ingresso */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Barriere all'Ingresso</h4>
+                <div className="bg-purple-50 p-4 rounded-lg mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Forza Barriere:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.competitive_analysis.barriers_to_entry.score)} ${getScoreColor(professionalData.competitive_analysis.barriers_to_entry.score)}`}>
+                      {professionalData.competitive_analysis.barriers_to_entry.score}/100
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Barriere Identificate:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {professionalData.competitive_analysis.barriers_to_entry.barriers.map((barrier: string, index: number) => (
+                        <li key={index} className="text-sm text-gray-600">{barrier}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vantaggi Competitivi */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Vantaggi Competitivi</h4>
+                <div className="bg-yellow-50 p-4 rounded-lg mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Sostenibilità:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      professionalData.competitive_analysis.competitive_advantages.sustainable 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {professionalData.competitive_analysis.competitive_advantages.sustainable ? 'Sostenibile' : 'Da Consolidare'}
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Vantaggi Attuali:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {professionalData.competitive_analysis.competitive_advantages.advantages.map((advantage: string, index: number) => (
+                        <li key={index} className="text-sm text-gray-600">{advantage}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Minacce Competitive */}
+              <div>
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Minacce Competitive</h4>
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Livello Minaccia:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(100 - professionalData.competitive_analysis.threat_level.score)} ${getScoreColor(100 - professionalData.competitive_analysis.threat_level.score)}`}>
+                      {professionalData.competitive_analysis.threat_level.score}/100
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Principali Minacce:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {professionalData.competitive_analysis.threat_level.threats.map((threat: string, index: number) => (
+                        <li key={index} className="text-sm text-gray-600">{threat}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'financial' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Analisi Finanziaria Dettagliata</h3>
+              
+              {/* Modello di Ricavi */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Modello di Ricavi</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-gray-700">Chiarezza Modello:</span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.financial_analysis.revenue_model.clarity)} ${getScoreColor(professionalData.financial_analysis.revenue_model.clarity)}`}>
+                        {professionalData.financial_analysis.revenue_model.clarity}/100
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-gray-700">Scalabilità:</span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.financial_analysis.revenue_model.scalability)} ${getScoreColor(professionalData.financial_analysis.revenue_model.scalability)}`}>
+                        {professionalData.financial_analysis.revenue_model.scalability}/100
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 mt-3">{professionalData.financial_analysis.revenue_model.reasoning}</p>
+              </div>
+
+              {/* Unit Economics */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Unit Economics</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <div className="text-center">
+                      <span className="text-sm text-gray-600">LTV/CAC Ratio</span>
+                      <div className="text-2xl font-bold text-purple-600">
+                        {professionalData.financial_analysis.unit_economics.ltv_cac_ratio.toFixed(1)}
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {professionalData.financial_analysis.unit_economics.ltv_cac_ratio >= 3 ? 'Ottimo' : 'Da Migliorare'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-orange-50 p-4 rounded-lg">
+                    <div className="text-center">
+                      <span className="text-sm text-gray-600">Payback Period</span>
+                      <div className="text-2xl font-bold text-orange-600">
+                        {professionalData.financial_analysis.unit_economics.payback_period} mesi
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {professionalData.financial_analysis.unit_economics.payback_period <= 12 ? 'Ottimo' : 'Da Ottimizzare'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 mt-3">{professionalData.financial_analysis.unit_economics.reasoning}</p>
+              </div>
+
+              {/* Proiezioni Finanziarie */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Proiezioni Finanziarie</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium text-gray-700">Realismo Proiezioni:</span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.financial_analysis.financial_projections.realism)} ${getScoreColor(professionalData.financial_analysis.financial_projections.realism)}`}>
+                        {professionalData.financial_analysis.financial_projections.realism}/100
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="text-center">
+                      <span className="text-sm text-gray-600">Tasso di Crescita</span>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {professionalData.financial_analysis.financial_projections.growth_rate}%
+                      </div>
+                      <span className="text-xs text-gray-500">Annuale</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 mt-3">{professionalData.financial_analysis.financial_projections.reasoning}</p>
+              </div>
+
+              {/* Fabbisogno di Finanziamento */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Fabbisogno di Finanziamento</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-yellow-50 p-4 rounded-lg">
+                    <div className="text-center">
+                      <span className="text-sm text-gray-600">Importo Richiesto</span>
+                      <div className="text-2xl font-bold text-yellow-600">
+                        {formatCurrency(professionalData.financial_analysis.funding_requirements.amount)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-red-50 p-4 rounded-lg">
+                    <div className="text-center">
+                      <span className="text-sm text-gray-600">Runway</span>
+                      <div className="text-2xl font-bold text-red-600">
+                        {professionalData.financial_analysis.funding_requirements.runway} mesi
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Milestone per il Finanziamento:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    {professionalData.financial_analysis.funding_requirements.milestones.map((milestone: string, index: number) => (
+                      <li key={index} className="text-sm text-gray-600">{milestone}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Percorso verso Profittabilità */}
+              <div>
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Percorso verso Profittabilità</h4>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                    <div className="text-center">
+                      <span className="text-sm text-gray-600">Timeline</span>
+                      <div className="text-xl font-bold text-gray-700">
+                        {professionalData.financial_analysis.path_to_profitability.timeline} mesi
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <span className="text-sm text-gray-600">Probabilità</span>
+                      <div className="text-xl font-bold text-gray-700">
+                        {professionalData.financial_analysis.path_to_profitability.probability}%
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-700">{professionalData.financial_analysis.path_to_profitability.reasoning}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'team' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Analisi del Team</h3>
+              
+              {/* Founder-Market Fit */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Founder-Market Fit</h4>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Score Founder-Market Fit:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.team_analysis.founder_market_fit.score)} ${getScoreColor(professionalData.team_analysis.founder_market_fit.score)}`}>
+                      {professionalData.team_analysis.founder_market_fit.score}/100
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700">{professionalData.team_analysis.founder_market_fit.reasoning}</p>
+                </div>
+              </div>
+
+              {/* Completezza del Team */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Completezza del Team</h4>
+                <div className="bg-green-50 p-4 rounded-lg mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Score Completezza:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.team_analysis.team_completeness.score)} ${getScoreColor(professionalData.team_analysis.team_completeness.score)}`}>
+                      {professionalData.team_analysis.team_completeness.score}/100
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Ruoli Mancanti:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {professionalData.team_analysis.team_completeness.missing_roles.map((role: string, index: number) => (
+                        <li key={index} className="text-sm text-red-600">{role}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rilevanza dell'Esperienza */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Rilevanza dell'Esperienza</h4>
+                <div className="bg-purple-50 p-4 rounded-lg mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Score Esperienza:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.team_analysis.experience_relevance.score)} ${getScoreColor(professionalData.team_analysis.experience_relevance.score)}`}>
+                      {professionalData.team_analysis.experience_relevance.score}/100
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Esperienze Chiave:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {professionalData.team_analysis.experience_relevance.key_experiences.map((exp: string, index: number) => (
+                        <li key={index} className="text-sm text-gray-600">{exp}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Track Record */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Track Record</h4>
+                <div className="bg-yellow-50 p-4 rounded-lg mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Score Track Record:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.team_analysis.track_record.score)} ${getScoreColor(professionalData.team_analysis.track_record.score)}`}>
+                      {professionalData.team_analysis.track_record.score}/100
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Successi Precedenti:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {professionalData.team_analysis.track_record.previous_successes.map((success: string, index: number) => (
+                        <li key={index} className="text-sm text-gray-600">{success}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Advisory Board */}
+              <div>
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Advisory Board</h4>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Forza Advisory:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.team_analysis.advisors_board.score)} ${getScoreColor(professionalData.team_analysis.advisors_board.score)}`}>
+                      {professionalData.team_analysis.advisors_board.score}/100
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 mt-2">{professionalData.team_analysis.advisors_board.advisory_strength}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'product' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Analisi del Prodotto</h3>
+              
+              {/* Product-Market Fit */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Product-Market Fit</h4>
+                <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Score PMF:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.product_analysis.product_market_fit.score)} ${getScoreColor(professionalData.product_analysis.product_market_fit.score)}`}>
+                      {professionalData.product_analysis.product_market_fit.score}/100
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Evidenze PMF:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {professionalData.product_analysis.product_market_fit.evidence.map((evidence: string, index: number) => (
+                        <li key={index} className="text-sm text-gray-600">{evidence}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stadio di Sviluppo */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Stadio di Sviluppo</h4>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <span className="text-sm text-gray-600">Stadio Attuale:</span>
+                      <div className="text-lg font-bold text-green-600">
+                        {professionalData.product_analysis.development_stage.stage}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600">Score Sviluppo:</span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ml-2 ${getScoreBackground(professionalData.product_analysis.development_stage.score)} ${getScoreColor(professionalData.product_analysis.development_stage.score)}`}>
+                        {professionalData.product_analysis.development_stage.score}/100
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-700">{professionalData.product_analysis.development_stage.reasoning}</p>
+                </div>
+              </div>
+
+              {/* Protezione IP */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Protezione Proprietà Intellettuale</h4>
+                <div className="bg-purple-50 p-4 rounded-lg mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Score IP Protection:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.product_analysis.ip_protection.score)} ${getScoreColor(professionalData.product_analysis.ip_protection.score)}`}>
+                      {professionalData.product_analysis.ip_protection.score}/100
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Protezioni Attuali:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {professionalData.product_analysis.ip_protection.protections.map((protection: string, index: number) => (
+                        <li key={index} className="text-sm text-gray-600">{protection}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scalabilità */}
+              <div className="mb-8">
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Scalabilità</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="text-center">
+                      <span className="text-sm text-gray-600">Scalabilità Tecnica</span>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {professionalData.product_analysis.scalability.technical}/100
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="text-center">
+                      <span className="text-sm text-gray-600">Scalabilità Business</span>
+                      <div className="text-2xl font-bold text-green-600">
+                        {professionalData.product_analysis.scalability.business}/100
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 mt-3">{professionalData.product_analysis.scalability.reasoning}</p>
+              </div>
+
+              {/* Trazione Utenti */}
+              <div>
+                <h4 className="text-md font-semibold text-gray-900 mb-4">Trazione Utenti</h4>
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">Score Trazione:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.product_analysis.user_traction.score)} ${getScoreColor(professionalData.product_analysis.user_traction.score)}`}>
+                      {professionalData.product_analysis.user_traction.score}/100
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Metriche di Trazione:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {professionalData.product_analysis.user_traction.metrics.map((metric: string, index: number) => (
+                        <li key={index} className="text-sm text-gray-600">{metric}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'risks' && (
           <div className="space-y-8">
             <div className="bg-white rounded-xl shadow-lg p-6">
@@ -542,62 +1072,6 @@ export default function ProfessionalAnalysisPage() {
             </div>
           </div>
         )}
-
-        {/* Add other tabs content here */}
-        {activeTab === 'market' && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Analisi di Mercato</h3>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-sm text-blue-600 font-medium mb-1">TAM</div>
-                  <div className="text-2xl font-bold text-blue-700">
-                    {formatCurrency(professionalData.market_analysis.tam_analysis.size)}
-                  </div>
-                  <div className="text-xs text-blue-500 mt-1">
-                    {professionalData.market_analysis.tam_analysis.confidence}% confidence
-                  </div>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-sm text-green-600 font-medium mb-1">SAM</div>
-                  <div className="text-2xl font-bold text-green-700">
-                    {formatCurrency(professionalData.market_analysis.sam_analysis.size)}
-                  </div>
-                  <div className="text-xs text-green-500 mt-1">
-                    {professionalData.market_analysis.sam_analysis.confidence}% confidence
-                  </div>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="text-sm text-purple-600 font-medium mb-1">SOM</div>
-                  <div className="text-2xl font-bold text-purple-700">
-                    {formatCurrency(professionalData.market_analysis.som_analysis.size)}
-                  </div>
-                  <div className="text-xs text-purple-500 mt-1">
-                    {professionalData.market_analysis.som_analysis.confidence}% confidence
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">Crescita di Mercato</h4>
-                  <div className="text-2xl font-bold text-green-600 mb-1">
-                    {professionalData.market_analysis.market_growth.rate}%
-                  </div>
-                  <p className="text-sm text-gray-600">{professionalData.market_analysis.market_growth.reasoning}</p>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">Maturità Mercato</h4>
-                  <div className="text-lg font-bold text-blue-600 mb-1">
-                    {professionalData.market_analysis.market_maturity.stage}
-                  </div>
-                  <p className="text-sm text-gray-600">{professionalData.market_analysis.market_maturity.reasoning}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Add similar content for other tabs */}
       </div>
     </div>
   )
