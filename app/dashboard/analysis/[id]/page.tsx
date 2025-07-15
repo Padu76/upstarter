@@ -3,398 +3,125 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { 
-  ArrowLeft, TrendingUp, AlertCircle, CheckCircle, Target, Users, DollarSign, Clock, 
-  Download, Share, Star, ThumbsUp, ThumbsDown, Plus, Upload, FileText, 
-  AlertTriangle, Info, Lightbulb, Presentation, FileCheck, Edit3, 
-  MessageSquare, BookOpen, TrendingDown, Eye, EyeOff
+  ArrowLeft, TrendingUp, AlertCircle, CheckCircle, Target, Users, DollarSign, 
+  Clock, Download, Share, Star, ThumbsUp, ThumbsDown, Plus, Upload, FileText, 
+  AlertTriangle, Info, Lightbulb, Presentation, FileCheck, Edit3, MessageSquare,
+  BarChart3, PieChart, LineChart, Activity, Shield, Zap, Building2, Rocket,
+  Brain, TrendingDown, Award, Flag
 } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 
-interface AnalysisData {
-  id: string
-  analysis: any
-  extractedInfo: any
-  fileName?: string
-  timestamp: string
-  type: 'professional'
-  completeness?: number
-  missingAreas?: MissingInfo[]
+interface ProfessionalAnalysis {
+  overall_score: number
+  valuation_range: {
+    min: number
+    max: number
+    recommended: number
+  }
+  berkus_analysis: any
+  scorecard_analysis: any
+  risk_factor_analysis: any
+  market_analysis: any
+  competitive_analysis: any
+  financial_analysis: any
+  team_analysis: any
+  product_analysis: any
+  investment_readiness: any
+  recommendations: string[]
+  missing_areas: string[]
+  next_steps: any
 }
 
-interface MissingInfo {
-  category: string
-  items: string[]
-  priority: 'critical' | 'important' | 'nice-to-have'
-  description: string
-  forStage: 'pitch' | 'business-plan' | 'both'
-}
-
-interface AdditionalInfo {
-  category: string
-  content: string
-  timestamp: string
-}
-
-export default function AnalysisPage() {
+export default function ProfessionalAnalysisPage() {
   const params = useParams()
   const router = useRouter()
-  const analysisId = params.id as string
-  const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null)
+  const { data: session } = useSession()
+  const [analysis, setAnalysis] = useState<any>(null)
+  const [professionalData, setProfessionalData] = useState<ProfessionalAnalysis | null>(null)
+  const [activeTab, setActiveTab] = useState('overview')
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState('analysis')
-  const [showAdditionalInfoForm, setShowAdditionalInfoForm] = useState(false)
-  const [additionalInfos, setAdditionalInfos] = useState<AdditionalInfo[]>([])
-  const [newInfoCategory, setNewInfoCategory] = useState('')
-  const [newInfoContent, setNewInfoContent] = useState('')
-  const [showUploadForm, setShowUploadForm] = useState(false)
 
   useEffect(() => {
-    const loadAnalysisData = () => {
-      try {
-        if (!analysisId || analysisId === 'null') {
-          setLoading(false)
-          return
-        }
+    loadAnalysis()
+  }, [params.id])
 
-        const stored = localStorage.getItem(`analysis_${analysisId}`)
-        const additionalStored = localStorage.getItem(`additional_info_${analysisId}`)
-        
-        if (stored) {
-          const data = JSON.parse(stored)
-          setAnalysisData(enhanceAnalysisWithCompleteness(data))
-        } else {
-          setAnalysisData(generateProgressiveAnalysisData(analysisId))
-        }
-
-        if (additionalStored) {
-          setAdditionalInfos(JSON.parse(additionalStored))
-        }
-        
-      } catch (error) {
-        console.error('Errore caricamento analisi:', error)
-        setError('Errore nel caricamento dell\'analisi')
-        setAnalysisData(generateProgressiveAnalysisData(analysisId))
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadAnalysisData()
-  }, [analysisId])
-
-  const enhanceAnalysisWithCompleteness = (data: AnalysisData): AnalysisData => {
-    const completeness = calculateCompleteness(data.extractedInfo)
-    const missingAreas = generateMissingAreas(data.extractedInfo, completeness)
-    
-    return {
-      ...data,
-      completeness,
-      missingAreas
-    }
-  }
-
-  const calculateCompleteness = (extractedInfo: any): number => {
-    const requiredFields = [
-      'title', 'description', 'target_market', 'value_proposition', 
-      'business_model', 'competitive_advantage', 'team_experience', 
-      'funding_needed', 'timeline', 'main_challenges'
-    ]
-    
-    let completedFields = 0
-    let totalWeight = 0
-    
-    // Peso diverso per ogni campo
-    const fieldWeights = {
-      title: 5,
-      description: 10,
-      target_market: 15,
-      value_proposition: 15,
-      business_model: 15,
-      competitive_advantage: 10,
-      team_experience: 10,
-      funding_needed: 10,
-      timeline: 5,
-      main_challenges: 5
-    }
-    
-    requiredFields.forEach(field => {
-      const weight = fieldWeights[field as keyof typeof fieldWeights]
-      totalWeight += weight
+  const loadAnalysis = () => {
+    try {
+      const analysisId = params.id as string
+      const storedAnalysis = localStorage.getItem(`analysis_${analysisId}`)
       
-      const value = field === 'title' || field === 'description' 
-        ? extractedInfo[field] 
-        : extractedInfo.questionnaire?.[field]
-      
-      if (value && value.length > 20 && !value.includes('Da definire') && !value.includes('Da approfondire')) {
-        completedFields += weight
-      }
-    })
-    
-    return Math.round((completedFields / totalWeight) * 100)
-  }
-
-  const generateMissingAreas = (extractedInfo: any, completeness: number): MissingInfo[] => {
-    const missing: MissingInfo[] = []
-    
-    // Analisi campi critici mancanti
-    if (!extractedInfo.questionnaire?.target_market || extractedInfo.questionnaire.target_market.includes('Da definire')) {
-      missing.push({
-        category: 'Analisi di Mercato',
-        items: [
-          'Dimensioni del mercato (TAM/SAM/SOM) con numeri specifici',
-          'Segmentazione clientela dettagliata con personas',
-          'Ricerca competitiva approfondita con positioning map',
-          'Analisi dei trend di mercato e drivers di crescita'
-        ],
-        priority: 'critical',
-        description: 'Fondamentale per validare l\'opportunità di business',
-        forStage: 'pitch'
-      })
-    }
-
-    if (!extractedInfo.questionnaire?.business_model || extractedInfo.questionnaire.business_model.includes('Da strutturare')) {
-      missing.push({
-        category: 'Modello di Business',
-        items: [
-          'Revenue streams dettagliati con pricing strategy',
-          'Unit economics: LTV, CAC, contribution margin',
-          'Business Model Canvas completo',
-          'Proiezioni finanziarie 3-5 anni'
-        ],
-        priority: 'critical',
-        description: 'Essenziale per dimostrare sostenibilità economica',
-        forStage: 'pitch'
-      })
-    }
-
-    if (!extractedInfo.questionnaire?.team_experience || extractedInfo.questionnaire.team_experience.includes('Da descrivere')) {
-      missing.push({
-        category: 'Team & Execution',
-        items: [
-          'CV dettagliati del team fondatore',
-          'Track record e successi precedenti',
-          'Competenze tecniche e di settore',
-          'Advisory board e mentor strategici',
-          'Piano di hiring e organizzazione'
-        ],
-        priority: 'important',
-        description: 'Cruciale per la fiducia degli investitori',
-        forStage: 'pitch'
-      })
-    }
-
-    if (completeness < 60) {
-      missing.push({
-        category: 'Strategia Go-to-Market',
-        items: [
-          'Customer acquisition strategy con canali specifici',
-          'Partnerships strategiche identificate',
-          'Piano di marketing e comunicazione',
-          'Roadmap di sviluppo prodotto',
-          'Strategie di retention e upselling'
-        ],
-        priority: 'important',
-        description: 'Necessario per il scaling del business',
-        forStage: 'business-plan'
-      })
-    }
-
-    if (completeness < 80) {
-      missing.push({
-        category: 'Aspetti Finanziari Avanzati',
-        items: [
-          'Cash flow projections mensili',
-          'Scenario analysis (best/base/worst case)',
-          'Break-even analysis dettagliata',
-          'Working capital requirements',
-          'Exit strategy e valuation benchmarks'
-        ],
-        priority: 'important',
-        description: 'Richiesto per business plan completo',
-        forStage: 'business-plan'
-      })
-
-      missing.push({
-        category: 'Risk Assessment',
-        items: [
-          'Analisi SWOT approfondita',
-          'Risk mitigation strategies',
-          'Sensitivity analysis sui key drivers',
-          'Contingency plans operativi',
-          'Compliance e aspetti legali'
-        ],
-        priority: 'nice-to-have',
-        description: 'Dimostra maturità strategica del progetto',
-        forStage: 'business-plan'
-      })
-    }
-
-    return missing
-  }
-
-  const generateProgressiveAnalysisData = (id: string): AnalysisData => {
-    const mockExtractedInfo = {
-      title: 'EcoTech Solutions - Smart Cities IoT',
-      description: 'Piattaforma IoT per la gestione intelligente di infrastrutture urbane con focus su sostenibilità ambientale.',
-      questionnaire: {
-        target_market: 'Smart cities e enti pubblici - mercato da definire meglio con dimensioni specifiche',
-        value_proposition: 'Riduzione costi energetici attraverso IoT - value proposition da approfondire',
-        business_model: 'Modello SaaS - da strutturare pricing e revenue streams',
-        competitive_advantage: 'Tecnologia IoT proprietaria - vantaggio competitivo da evidenziare',
-        team_experience: 'Team tecnico - esperienza da descrivere dettagliatamente',
-        funding_needed: 'Finanziamenti da quantificare per sviluppo e crescita',
-        timeline: 'Roadmap da pianificare con milestones specifiche',
-        main_challenges: 'Sfide tecniche e di mercato da identificare'
-      }
-    }
-
-    const completeness = calculateCompleteness(mockExtractedInfo)
-    const missingAreas = generateMissingAreas(mockExtractedInfo, completeness)
-
-    return {
-      id,
-      timestamp: new Date().toISOString(),
-      fileName: 'Business Plan Draft.docx',
-      type: 'professional',
-      extractedInfo: mockExtractedInfo,
-      completeness,
-      missingAreas,
-      analysis: {
-        overall_score: Math.max(40, completeness - 10), // Score minimo 40
-        preliminary_assessment: generatePreliminaryAssessment(completeness),
-        executive_summary: {
-          initial_impression: completeness > 70 
-            ? "Il progetto presenta elementi promettenti ma necessita di approfondimenti strategici"
-            : "Il progetto è in fase iniziale e richiede sviluppo sostanziale prima della valutazione finale",
-          key_strengths: [
-            "Settore IoT in forte crescita con opportunità significative",
-            "Focus su sostenibilità allineato ai trend ESG",
-            "Mercato smart cities supportato da policy EU"
-          ],
-          immediate_concerns: [
-            "Informazioni insufficienti per valutazione completa",
-            "Necessità di validazione product-market fit",
-            "Business model e monetizzazione da strutturare"
-          ],
-          next_steps_priority: missingAreas.filter(area => area.priority === 'critical').map(area => area.category)
+      if (storedAnalysis) {
+        const parsedAnalysis = JSON.parse(storedAnalysis)
+        setAnalysis(parsedAnalysis)
+        
+        // Estrai l'analisi professionale
+        if (parsedAnalysis.analysis_data?.professional_analysis) {
+          setProfessionalData(parsedAnalysis.analysis_data.professional_analysis)
+        } else if (parsedAnalysis.professional_analysis) {
+          setProfessionalData(parsedAnalysis.professional_analysis)
         }
       }
+    } catch (error) {
+      console.error('Error loading analysis:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const generatePreliminaryAssessment = (completeness: number): string => {
-    if (completeness >= 80) {
-      return "ANALISI AVANZATA POSSIBILE: Il progetto contiene informazioni sufficienti per una valutazione approfondita. Alcune aree potrebbero beneficiare di ulteriori dettagli per ottimizzare la strategia."
-    } else if (completeness >= 60) {
-      return "ANALISI INTERMEDIA: Il progetto presenta elementi interessanti ma necessita di informazioni aggiuntive critiche per una valutazione completa. Focus su business model e mercato."
-    } else if (completeness >= 40) {
-      return "ANALISI PRELIMINARE: Il progetto è in fase iniziale. Sono necessarie informazioni fondamentali per procedere con una valutazione significativa. Priorità su mercato e value proposition."
-    } else {
-      return "PROGETTO EMBRIONALE: Informazioni insufficienti per una valutazione meaningful. Necessario sviluppo sostanziale del concept prima di procedere con analisi dettagliata."
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-600'
+    if (score >= 60) return 'text-yellow-600'
+    return 'text-red-600'
+  }
+
+  const getScoreBackground = (score: number) => {
+    if (score >= 80) return 'bg-green-100'
+    if (score >= 60) return 'bg-yellow-100'
+    return 'bg-red-100'
+  }
+
+  const formatCurrency = (amount: number) => {
+    if (amount >= 1000000) {
+      return `€${(amount / 1000000).toFixed(1)}M`
+    } else if (amount >= 1000) {
+      return `€${(amount / 1000).toFixed(0)}K`
     }
+    return `€${amount.toLocaleString()}`
   }
 
-  const handleAddAdditionalInfo = () => {
-    if (!newInfoCategory || !newInfoContent) return
-
-    const newInfo: AdditionalInfo = {
-      category: newInfoCategory,
-      content: newInfoContent,
-      timestamp: new Date().toISOString()
-    }
-
-    const updatedInfos = [...additionalInfos, newInfo]
-    setAdditionalInfos(updatedInfos)
-    localStorage.setItem(`additional_info_${analysisId}`, JSON.stringify(updatedInfos))
-
-    // Reset form
-    setNewInfoCategory('')
-    setNewInfoContent('')
-    setShowAdditionalInfoForm(false)
-
-    // Ricalcola completeness se ha aggiunto info critiche
-    if (analysisData) {
-      const enhanced = enhanceAnalysisWithCompleteness(analysisData)
-      setAnalysisData(enhanced)
-    }
-  }
-
-  const getCompletenessColor = (completeness: number) => {
-    if (completeness >= 80) return 'bg-green-500'
-    if (completeness >= 60) return 'bg-yellow-500'
-    if (completeness >= 40) return 'bg-orange-500'
-    return 'bg-red-500'
-  }
-
-  const getCompletenessLabel = (completeness: number) => {
-    if (completeness >= 80) return 'Analisi Completa'
-    if (completeness >= 60) return 'Informazioni Sufficienti'
-    if (completeness >= 40) return 'Analisi Preliminare'
-    return 'Progetto Embrionale'
-  }
-
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'critical': return <AlertTriangle className="w-4 h-4 text-red-500" />
-      case 'important': return <AlertCircle className="w-4 h-4 text-orange-500" />
-      case 'nice-to-have': return <Info className="w-4 h-4 text-blue-500" />
-      default: return <Info className="w-4 h-4" />
-    }
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical': return 'border-red-200 bg-red-50'
-      case 'important': return 'border-orange-200 bg-orange-50'
-      case 'nice-to-have': return 'border-blue-200 bg-blue-50'
-      default: return 'border-gray-200 bg-gray-50'
+  const getRiskColor = (level: string) => {
+    switch (level) {
+      case 'low': return 'text-green-600 bg-green-100'
+      case 'medium': return 'text-yellow-600 bg-yellow-100'
+      case 'high': return 'text-red-600 bg-red-100'
+      default: return 'text-gray-600 bg-gray-100'
     }
   }
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Caricamento consulenza strategica...</p>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Caricamento analisi professionale...</p>
         </div>
       </div>
     )
   }
 
-  if (!analysisId || analysisId === 'null' || !analysisData) {
+  if (!professionalData) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Torna Indietro
-        </button>
-
-        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Analisi Non Trovata</h1>
-          <p className="text-gray-600 mb-6">
-            Non riusciamo a trovare l'analisi richiesta. Prova a caricare di nuovo il documento.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => router.push('/dashboard/new-idea')}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-            >
-              Nuova Analisi
-            </button>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Analisi Non Disponibile</h2>
+            <p className="text-gray-600 mb-6">L'analisi professionale per questo progetto non è disponibile o è stata rimossa.</p>
             <button
               onClick={() => router.push('/dashboard')}
-              className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Dashboard
+              Torna alla Dashboard
             </button>
           </div>
         </div>
@@ -402,54 +129,36 @@ export default function AnalysisPage() {
     )
   }
 
-  const { analysis, extractedInfo, completeness = 0, missingAreas = [] } = analysisData
-
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="mb-8">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Torna alla Dashboard
-        </button>
-        
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{extractedInfo.title}</h1>
-            <p className="text-gray-600 max-w-2xl">{extractedInfo.description}</p>
-            {analysisData.fileName && (
-              <p className="text-sm text-gray-500 mt-2">
-                📄 {analysisData.fileName} • {new Date(analysisData.timestamp).toLocaleString('it-IT')}
-              </p>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Completeness Badge */}
-            <div className="text-right">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-16 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full transition-all ${getCompletenessColor(completeness)}`}
-                    style={{ width: `${completeness}%` }}
-                  />
-                </div>
-                <span className="text-sm font-semibold text-gray-700">{completeness}%</span>
-              </div>
-              <p className="text-xs text-gray-500">{getCompletenessLabel(completeness)}</p>
-            </div>
-            
-            <div className="flex gap-2">
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                <Share className="w-4 h-4" />
-                Condividi
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Dashboard
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Download className="w-4 h-4" />
-                Esporta
+              <div className="border-l border-gray-300 h-6"></div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {analysis?.title || 'Analisi Professionale'}
+              </h1>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBackground(professionalData.overall_score)} ${getScoreColor(professionalData.overall_score)}`}>
+                Score: {professionalData.overall_score}/100
+              </div>
+              <button className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-700 transition-colors">
+                <Download className="w-4 h-4 mr-2" />
+                Esporta Report
+              </button>
+              <button className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-700 transition-colors">
+                <Share className="w-4 h-4 mr-2" />
+                Condividi
               </button>
             </div>
           </div>
@@ -457,446 +166,438 @@ export default function AnalysisPage() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="border-b border-gray-200 mb-8">
-        <nav className="flex space-x-8 overflow-x-auto">
-          {[
-            { id: 'analysis', label: 'Analisi Attuale', icon: TrendingUp },
-            { id: 'missing', label: 'Aree da Sviluppare', icon: AlertTriangle, badge: missingAreas.length },
-            { id: 'roadmap', label: 'Roadmap Sviluppo', icon: Target },
-            { id: 'additional', label: 'Info Aggiuntive', icon: Plus, badge: additionalInfos.length }
-          ].map((tab) => {
-            const Icon = tab.icon
-            return (
+      <div className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-6">
+          <nav className="flex space-x-8">
+            {[
+              { id: 'overview', label: 'Panoramica', icon: BarChart3 },
+              { id: 'valuation', label: 'Valutazione', icon: DollarSign },
+              { id: 'market', label: 'Mercato', icon: TrendingUp },
+              { id: 'competitive', label: 'Competitività', icon: Target },
+              { id: 'financial', label: 'Finanziario', icon: PieChart },
+              { id: 'team', label: 'Team', icon: Users },
+              { id: 'product', label: 'Prodotto', icon: Rocket },
+              { id: 'risks', label: 'Rischi', icon: Shield },
+              { id: 'recommendations', label: 'Raccomandazioni', icon: Lightbulb }
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-4 px-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors relative ${
+                className={`flex items-center px-4 py-4 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <tab.icon className="w-4 h-4 mr-2" />
                 {tab.label}
-                {tab.badge && tab.badge > 0 && (
-                  <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {tab.badge}
-                  </span>
-                )}
               </button>
-            )
-          })}
-        </nav>
+            ))}
+          </nav>
+        </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="space-y-8">
-        
-        {/* Analysis Tab */}
-        {activeTab === 'analysis' && (
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {activeTab === 'overview' && (
           <div className="space-y-8">
-            {/* Preliminary Assessment */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`p-2 rounded-lg ${completeness >= 60 ? 'bg-green-100' : 'bg-orange-100'}`}>
-                  {completeness >= 60 ? (
-                    <CheckCircle className="w-6 h-6 text-green-600" />
-                  ) : (
-                    <AlertCircle className="w-6 h-6 text-orange-600" />
-                  )}
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Valutazione Preliminare</h2>
-              </div>
-              
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <p className="text-blue-800 font-medium leading-relaxed">
-                  {analysis.preliminary_assessment}
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
-                    <ThumbsUp className="w-5 h-5" />
-                    Elementi Positivi
-                  </h3>
-                  <ul className="space-y-2">
-                    {analysis.executive_summary.key_strengths.map((strength: string, index: number) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700 text-sm">{strength}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-orange-800 mb-3 flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5" />
-                    Aree di Attenzione
-                  </h3>
-                  <ul className="space-y-2">
-                    {analysis.executive_summary.immediate_concerns.map((concern: string, index: number) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700 text-sm">{concern}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {analysis.executive_summary.next_steps_priority && analysis.executive_summary.next_steps_priority.length > 0 && (
-                <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <h3 className="font-semibold text-red-800 mb-2">Priorità Immediate</h3>
-                  <p className="text-red-700 text-sm">
-                    Focus su: {analysis.executive_summary.next_steps_priority.join(', ')}
-                  </p>
-                </div>
-              )}
-            </div>
-
             {/* Score Overview */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Score Attuale</h2>
-              <div className="flex items-center justify-center">
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-full border-8 border-gray-200 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-gray-900">{analysis.overall_score}</div>
-                      <div className="text-sm text-gray-500">/ 100</div>
-                    </div>
-                  </div>
-                  <div 
-                    className={`absolute inset-0 rounded-full border-8 ${getCompletenessColor(analysis.overall_score)} border-transparent transition-all`}
-                    style={{
-                      background: `conic-gradient(from 0deg, ${analysis.overall_score >= 80 ? '#10b981' : analysis.overall_score >= 60 ? '#f59e0b' : '#ef4444'} ${analysis.overall_score * 3.6}deg, transparent 0deg)`
-                    }}
-                  />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Score Complessivo</h3>
+                  <Activity className="w-5 h-5 text-blue-600" />
                 </div>
-              </div>
-              <div className="text-center mt-4">
-                <p className="text-gray-600">
-                  {analysis.overall_score >= 80 ? 'Progetto maturo, pronto per investimenti' :
-                   analysis.overall_score >= 60 ? 'Progetto promettente, necessita sviluppo' :
-                   analysis.overall_score >= 40 ? 'Progetto in fase iniziale' :
-                   'Progetto embrionale'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Missing Areas Tab */}
-        {activeTab === 'missing' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Aree da Sviluppare per Analisi Completa</h2>
-              
-              {missingAreas.length === 0 ? (
-                <div className="text-center py-8">
-                  <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Analisi Completa!</h3>
-                  <p className="text-gray-600">Il tuo progetto contiene tutte le informazioni necessarie per una valutazione approfondita.</p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {missingAreas.map((area, index) => (
-                    <div key={index} className={`border-2 rounded-lg p-4 ${getPriorityColor(area.priority)}`}>
-                      <div className="flex items-start gap-3 mb-3">
-                        {getPriorityIcon(area.priority)}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-gray-900">{area.category}</h3>
-                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                              area.forStage === 'pitch' ? 'bg-blue-100 text-blue-800' :
-                              area.forStage === 'business-plan' ? 'bg-purple-100 text-purple-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {area.forStage === 'pitch' ? 'Per Pitch' :
-                               area.forStage === 'business-plan' ? 'Per Business Plan' :
-                               'Entrambi'}
-                            </span>
-                          </div>
-                          <p className="text-gray-700 text-sm mb-3">{area.description}</p>
-                          <ul className="space-y-1">
-                            {area.items.map((item, itemIndex) => (
-                              <li key={itemIndex} className="flex items-start gap-2">
-                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0" />
-                                <span className="text-gray-600 text-sm">{item}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Roadmap Tab */}
-        {activeTab === 'roadmap' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Roadmap di Sviluppo</h2>
-              
-              <div className="space-y-8">
-                {/* Step 1: Pitch Deck */}
-                <div className="relative">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
-                      1
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <Presentation className="w-5 h-5" />
-                        Preparazione Pitch Deck
-                      </h3>
-                      <p className="text-gray-600 text-sm">Focus su validazione concept e primo interesse investitori</p>
-                    </div>
+                <div className="text-center">
+                  <div className={`text-4xl font-bold ${getScoreColor(professionalData.overall_score)}`}>
+                    {professionalData.overall_score}
                   </div>
-                  
-                  <div className="ml-14">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                      <h4 className="font-medium text-blue-900 mb-2">Elementi Critici per il Pitch:</h4>
-                      <ul className="space-y-1">
-                        {missingAreas
-                          .filter(area => area.forStage === 'pitch' || area.forStage === 'both')
-                          .slice(0, 3)
-                          .map((area, index) => (
-                            <li key={index} className="text-blue-800 text-sm">• {area.category}</li>
-                          ))}
-                      </ul>
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <strong>Timeline:</strong> 2-4 settimane | <strong>Milestone:</strong> Pitch deck 10-12 slide pronto
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step 2: Business Plan */}
-                <div className="relative">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-semibold">
-                      2
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <FileCheck className="w-5 h-5" />
-                        Business Plan Completo
-                      </h3>
-                      <p className="text-gray-600 text-sm">Documenting completo per due diligence investitori</p>
-                    </div>
-                  </div>
-                  
-                  <div className="ml-14">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                      <h4 className="font-medium text-green-900 mb-2">Sviluppo Business Plan:</h4>
-                      <ul className="space-y-1">
-                        {missingAreas
-                          .filter(area => area.forStage === 'business-plan' || area.forStage === 'both')
-                          .slice(0, 3)
-                          .map((area, index) => (
-                            <li key={index} className="text-green-800 text-sm">• {area.category}</li>
-                          ))}
-                      </ul>
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <strong>Timeline:</strong> 6-8 settimane | <strong>Milestone:</strong> Business plan esecutivo 30-40 pagine
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step 3: Investment Ready */}
-                <div className="relative">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold">
-                      3
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5" />
-                        Investment Ready
-                      </h3>
-                      <p className="text-gray-600 text-sm">Preparazione round di finanziamento</p>
-                    </div>
-                  </div>
-                  
-                  <div className="ml-14">
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                      <h4 className="font-medium text-purple-900 mb-2">Documenti per Investitori:</h4>
-                      <ul className="space-y-1 text-purple-800 text-sm">
-                        <li>• Pitch deck finale</li>
-                        <li>• Executive summary</li>
-                        <li>• Financial model dettagliato</li>
-                        <li>• Market research completa</li>
-                        <li>• Legal documents</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Additional Info Tab */}
-        {activeTab === 'additional' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Informazioni Aggiuntive</h2>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowUploadForm(!showUploadForm)}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Carica Documento
-                  </button>
-                  <button
-                    onClick={() => setShowAdditionalInfoForm(!showAdditionalInfoForm)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Aggiungi Info
-                  </button>
-                </div>
-              </div>
-
-              {/* Upload Form */}
-              {showUploadForm && (
-                <div className="mb-6 p-4 border border-gray-200 rounded-lg">
-                  <h3 className="font-medium text-gray-900 mb-3">Carica Documentazione Integrativa</h3>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-600 mb-2">Trascina i file qui o clicca per selezionare</p>
-                    <p className="text-sm text-gray-500">Supportati: PDF, DOCX, XLSX, PPT</p>
-                    <button className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                      Seleziona File
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Additional Info Form */}
-              {showAdditionalInfoForm && (
-                <div className="mb-6 p-4 border border-gray-200 rounded-lg">
-                  <h3 className="font-medium text-gray-900 mb-3">Aggiungi Informazioni</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
-                      <select
-                        value={newInfoCategory}
-                        onChange={(e) => setNewInfoCategory(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="">Seleziona categoria...</option>
-                        <option value="Mercato">Analisi di Mercato</option>
-                        <option value="Business Model">Business Model</option>
-                        <option value="Team">Team & Competenze</option>
-                        <option value="Finanze">Aspetti Finanziari</option>
-                        <option value="Prodotto">Prodotto & Tecnologia</option>
-                        <option value="Strategia">Strategia & Go-to-Market</option>
-                        <option value="Altro">Altro</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Informazioni Dettagliate</label>
-                      <textarea
-                        value={newInfoContent}
-                        onChange={(e) => setNewInfoContent(e.target.value)}
-                        rows={4}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Inserisci informazioni dettagliate..."
+                  <div className="text-gray-600 text-sm mt-1">su 100</div>
+                  <div className="mt-4">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${professionalData.overall_score}%` }}
                       />
                     </div>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleAddAdditionalInfo}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Aggiungi
-                      </button>
-                      <button
-                        onClick={() => setShowAdditionalInfoForm(false)}
-                        className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        Annulla
-                      </button>
-                    </div>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Additional Info List */}
-              {additionalInfos.length > 0 ? (
-                <div className="space-y-4">
-                  {additionalInfos.map((info, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900">{info.category}</h4>
-                        <span className="text-sm text-gray-500">
-                          {new Date(info.timestamp).toLocaleDateString('it-IT')}
-                        </span>
-                      </div>
-                      <p className="text-gray-700 text-sm leading-relaxed">{info.content}</p>
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Valutazione</h3>
+                  <DollarSign className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Minima:</span>
+                    <span className="font-semibold">{formatCurrency(professionalData.valuation_range.min)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Raccomandata:</span>
+                    <span className="font-semibold text-green-600">{formatCurrency(professionalData.valuation_range.recommended)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Massima:</span>
+                    <span className="font-semibold">{formatCurrency(professionalData.valuation_range.max)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Investment Readiness</h3>
+                  <Flag className="w-5 h-5 text-purple-600" />
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Pitch Deck:</span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getScoreBackground(professionalData.investment_readiness.pitch_deck_quality.score)} ${getScoreColor(professionalData.investment_readiness.pitch_deck_quality.score)}`}>
+                      {professionalData.investment_readiness.pitch_deck_quality.score}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Business Plan:</span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getScoreBackground(professionalData.investment_readiness.business_plan_completeness.score)} ${getScoreColor(professionalData.investment_readiness.business_plan_completeness.score)}`}>
+                      {professionalData.investment_readiness.business_plan_completeness.score}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Due Diligence:</span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getScoreBackground(professionalData.investment_readiness.due_diligence_readiness.score)} ${getScoreColor(professionalData.investment_readiness.due_diligence_readiness.score)}`}>
+                      {professionalData.investment_readiness.due_diligence_readiness.score}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-gray-600">Berkus Method</span>
+                  <Award className="w-4 h-4 text-yellow-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(professionalData.berkus_analysis.total_valuation)}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {professionalData.berkus_analysis.summary}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-gray-600">Scorecard</span>
+                  <BarChart3 className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {professionalData.scorecard_analysis.weighted_score}/100
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {professionalData.scorecard_analysis.summary}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-gray-600">Market Size</span>
+                  <TrendingUp className="w-4 h-4 text-green-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(professionalData.market_analysis.som_analysis.size)}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  SOM - {professionalData.market_analysis.som_analysis.confidence}% confidence
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-gray-600">Risk Level</span>
+                  <Shield className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {professionalData.risk_factor_analysis.total_risk_adjustment > 0 ? '+' : ''}{professionalData.risk_factor_analysis.total_risk_adjustment}%
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {professionalData.risk_factor_analysis.summary}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Prossime Azioni Immediate</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {professionalData.next_steps.immediate_actions.map((action: any, index: number) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        action.priority === 'high' ? 'bg-red-100 text-red-600' :
+                        action.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                        'bg-green-100 text-green-600'
+                      }`}>
+                        {action.priority === 'high' ? 'Alta' : action.priority === 'medium' ? 'Media' : 'Bassa'}
+                      </span>
+                      <span className="text-xs text-gray-500">{action.timeline}</span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Nessuna informazione aggiuntiva</h3>
-                  <p className="text-gray-600">Aggiungi dettagli per migliorare la qualità dell'analisi</p>
-                </div>
-              )}
+                    <p className="text-sm text-gray-700">{action.action}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-      </div>
+        {activeTab === 'valuation' && (
+          <div className="space-y-8">
+            {/* Valuation Methods */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Berkus Method */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Metodo Berkus</h3>
+                <div className="space-y-4">
+                  {Object.entries(professionalData.berkus_analysis).map(([key, value]: [string, any]) => {
+                    if (key === 'total_valuation' || key === 'summary') return null
+                    return (
+                      <div key={key} className="border-b pb-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-gray-700 capitalize">
+                            {key.replace('_', ' ')}
+                          </span>
+                          <span className="font-semibold">{formatCurrency(value.score)}</span>
+                        </div>
+                        <p className="text-xs text-gray-600">{value.reasoning}</p>
+                      </div>
+                    )
+                  })}
+                  <div className="pt-3 border-t">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-900">Valutazione Totale:</span>
+                      <span className="text-xl font-bold text-green-600">
+                        {formatCurrency(professionalData.berkus_analysis.total_valuation)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-      {/* Action Buttons */}
-      <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Prossime Azioni Consigliate</h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          <button
-            onClick={() => setActiveTab('missing')}
-            className="flex items-center gap-3 p-4 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-50 transition-colors"
-          >
-            <AlertTriangle className="w-5 h-5" />
-            <div className="text-left">
-              <div className="font-semibold">Completa Analisi</div>
-              <div className="text-sm">Sviluppa aree mancanti</div>
+              {/* Scorecard Method */}
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Metodo Scorecard</h3>
+                <div className="space-y-4">
+                  {Object.entries(professionalData.scorecard_analysis).map(([key, value]: [string, any]) => {
+                    if (key === 'weighted_score' || key === 'summary') return null
+                    return (
+                      <div key={key} className="border-b pb-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-gray-700 capitalize">
+                            {key.replace('_', ' ')}
+                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-500">{value.weight}%</span>
+                            <span className="font-semibold">{value.score}/100</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-600">{value.reasoning}</p>
+                      </div>
+                    )
+                  })}
+                  <div className="pt-3 border-t">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-gray-900">Score Pesato:</span>
+                      <span className="text-xl font-bold text-blue-600">
+                        {professionalData.scorecard_analysis.weighted_score}/100
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('additional')}
-            className="flex items-center gap-3 p-4 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <div className="text-left">
-              <div className="font-semibold">Aggiungi Info</div>
-              <div className="text-sm">Fornisci dettagli extra</div>
+
+            {/* Valuation Range */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Range di Valutazione</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <div className="text-sm text-red-600 font-medium mb-1">Valutazione Minima</div>
+                  <div className="text-2xl font-bold text-red-700">
+                    {formatCurrency(professionalData.valuation_range.min)}
+                  </div>
+                  <div className="text-xs text-red-500 mt-1">Scenario pessimistico</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-sm text-green-600 font-medium mb-1">Valutazione Raccomandata</div>
+                  <div className="text-2xl font-bold text-green-700">
+                    {formatCurrency(professionalData.valuation_range.recommended)}
+                  </div>
+                  <div className="text-xs text-green-500 mt-1">Scenario realistico</div>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-sm text-blue-600 font-medium mb-1">Valutazione Massima</div>
+                  <div className="text-2xl font-bold text-blue-700">
+                    {formatCurrency(professionalData.valuation_range.max)}
+                  </div>
+                  <div className="text-xs text-blue-500 mt-1">Scenario ottimistico</div>
+                </div>
+              </div>
             </div>
-          </button>
-          
-          <button
-            onClick={() => router.push('/dashboard/new-idea')}
-            className="flex items-center gap-3 p-4 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors"
-          >
-            <Lightbulb className="w-5 h-5" />
-            <div className="text-left">
-              <div className="font-semibold">Nuova Analisi</div>
-              <div className="text-sm">Analizza altra idea</div>
+          </div>
+        )}
+
+        {activeTab === 'risks' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Analisi dei Rischi</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.entries(professionalData.risk_factor_analysis).map(([key, value]: [string, any]) => {
+                  if (key === 'total_risk_adjustment' || key === 'summary') return null
+                  return (
+                    <div key={key} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-medium text-gray-700 capitalize">
+                          {key.replace('_', ' ')}
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getRiskColor(value.level)}`}>
+                          {value.level === 'low' ? 'Basso' : value.level === 'medium' ? 'Medio' : 'Alto'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{value.description}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Impatto sulla valutazione:</span>
+                        <span className={`text-sm font-semibold ${value.impact > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {value.impact > 0 ? '+' : ''}{value.impact}%
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-gray-900">Aggiustamento Rischio Totale:</span>
+                  <span className={`text-lg font-bold ${professionalData.risk_factor_analysis.total_risk_adjustment > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {professionalData.risk_factor_analysis.total_risk_adjustment > 0 ? '+' : ''}{professionalData.risk_factor_analysis.total_risk_adjustment}%
+                  </span>
+                </div>
+              </div>
             </div>
-          </button>
-        </div>
+          </div>
+        )}
+
+        {activeTab === 'recommendations' && (
+          <div className="space-y-8">
+            {/* Recommendations */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Raccomandazioni Strategiche</h3>
+              <div className="space-y-4">
+                {professionalData.recommendations.map((rec: string, index: number) => (
+                  <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+                    <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-gray-700">{rec}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Missing Areas */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Aree da Sviluppare</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {professionalData.missing_areas.map((area: string, index: number) => (
+                  <div key={index} className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                    <span className="text-sm text-gray-700">{area}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Next Steps */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Prossimi Passi</h3>
+              <div className="space-y-6">
+                {Object.entries(professionalData.next_steps).map(([key, value]: [string, any]) => {
+                  if (key === 'immediate_actions') return null
+                  return (
+                    <div key={key}>
+                      <h4 className="font-medium text-gray-900 mb-3 capitalize">
+                        {key.replace('_', ' ')} ({value.timeline})
+                      </h4>
+                      <div className="space-y-2">
+                        {value.tasks.map((task: string, index: number) => (
+                          <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-gray-700">{task}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add other tabs content here */}
+        {activeTab === 'market' && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Analisi di Mercato</h3>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-sm text-blue-600 font-medium mb-1">TAM</div>
+                  <div className="text-2xl font-bold text-blue-700">
+                    {formatCurrency(professionalData.market_analysis.tam_analysis.size)}
+                  </div>
+                  <div className="text-xs text-blue-500 mt-1">
+                    {professionalData.market_analysis.tam_analysis.confidence}% confidence
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-sm text-green-600 font-medium mb-1">SAM</div>
+                  <div className="text-2xl font-bold text-green-700">
+                    {formatCurrency(professionalData.market_analysis.sam_analysis.size)}
+                  </div>
+                  <div className="text-xs text-green-500 mt-1">
+                    {professionalData.market_analysis.sam_analysis.confidence}% confidence
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-sm text-purple-600 font-medium mb-1">SOM</div>
+                  <div className="text-2xl font-bold text-purple-700">
+                    {formatCurrency(professionalData.market_analysis.som_analysis.size)}
+                  </div>
+                  <div className="text-xs text-purple-500 mt-1">
+                    {professionalData.market_analysis.som_analysis.confidence}% confidence
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2">Crescita di Mercato</h4>
+                  <div className="text-2xl font-bold text-green-600 mb-1">
+                    {professionalData.market_analysis.market_growth.rate}%
+                  </div>
+                  <p className="text-sm text-gray-600">{professionalData.market_analysis.market_growth.reasoning}</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2">Maturità Mercato</h4>
+                  <div className="text-lg font-bold text-blue-600 mb-1">
+                    {professionalData.market_analysis.market_maturity.stage}
+                  </div>
+                  <p className="text-sm text-gray-600">{professionalData.market_analysis.market_maturity.reasoning}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add similar content for other tabs */}
       </div>
     </div>
   )
