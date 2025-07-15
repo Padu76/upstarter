@@ -5,193 +5,310 @@ import airtableService from '@/lib/airtable'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🚀 Loading projects from Airtable...')
+    
+    // Verifica autenticazione
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+      console.log('❌ No authenticated user found')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('Loading projects for user:', session.user.email)
+    const userEmail = session.user.email
+    console.log('✅ User authenticated:', userEmail)
 
-    let userProjects: any[] = []
-    let usingDatabase = false
+    // STEP 1: Carica progetti da Airtable
+    console.log('📦 Step 1: Loading projects from Airtable...')
+    
+    let airtableProjects: any[] = []
+    let airtableStats: any = null
+    let airtableError: any = null
 
-    // Prova a caricare da Airtable se configurato
-    if (process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID) {
+    try {
+      // Carica progetti dell'utente
+      const rawProjects = await airtableService.getProjectsByUser(userEmail)
+      console.log('✅ Raw projects loaded:', rawProjects.length)
+
+      // Trasforma dati Airtable in formato compatibile
+      airtableProjects = rawProjects.map(record => ({
+        id: record.id,
+        title: record.fields.title,
+        description: record.fields.description,
+        score: record.fields.score || 0,
+        status: record.fields.status,
+        type: record.fields.type,
+        source: record.fields.source,
+        source_file: record.fields.source_file,
+        created_at: record.fields.created_at,
+        updated_at: record.fields.updated_at,
+        user_email: userEmail
+      }))
+
+      // Carica statistiche
+      airtableStats = await airtableService.getProjectStats(userEmail)
+      console.log('✅ Stats loaded:', airtableStats)
+
+    } catch (error) {
+      console.error('⚠️ Airtable load failed:', error)
+      airtableError = error
+    }
+
+    // STEP 2: Fallback a localStorage se Airtable fallisce
+    let localStorageProjects = []
+    
+    if (airtableProjects.length === 0) {
+      console.log('📱 Step 2: Airtable empty, checking localStorage fallback...')
+      
       try {
-        console.log('Loading from Airtable...')
-        
-        // Trova l'utente
-        const user = await airtableService.findUserByEmail(session.user.email)
-        
-        if (user) {
-          // Carica progetti dell'utente
-          const projects = await airtableService.findProjectsByUser(user.id!)
-          
-          userProjects = projects.map(project => ({
-            id: project.id,
-            title: project.title,
-            description: project.description,
-            score: project.score,
-            status: project.status,
-            type: project.type,
-            source: project.source,
-            source_file: project.source_file,
-            user_email: session.user.email,
-            created_at: project.created_at,
-            updated_at: project.updated_at,
-            saved_to_database: true
-          }))
-          
-          usingDatabase = true
-          console.log(`Loaded ${userProjects.length} projects from Airtable`)
-        } else {
-          console.log('User not found in Airtable')
-        }
-        
-      } catch (airtableError) {
-        console.error('Error loading from Airtable:', airtableError)
-        // Fallback a localStorage verrà gestito dal client
+        // Restituisci istruzioni per localStorage (client-side)
+        localStorageProjects = []
+        console.log('ℹ️ Client should check localStorage for fallback data')
+      } catch (error) {
+        console.error('⚠️ LocalStorage fallback failed:', error)
       }
     }
 
+    // STEP 3: Combina risultati
+    const allProjects = [...airtableProjects, ...localStorageProjects]
+    
+    // Ordina per data di creazione (più recenti prima)
+    allProjects.sort((a, b) => {
+      const dateA = new Date(a.created_at || '').getTime()
+      const dateB = new Date(b.created_at || '').getTime()
+      return dateB - dateA
+    })
+
+    console.log('📊 Final projects count:', allProjects.length)
+
+    // STEP 4: Calcola statistiche finali
+    const finalStats = airtableStats || {
+      total: allProjects.length,
+      analyzed: allProjects.filter(p => p.status === 'analyzed').length,
+      draft: allProjects.filter(p => p.status === 'draft').length,
+      archived: allProjects.filter(p => p.status === 'archived').length,
+      avgScore: allProjects.length > 0 ? 
+        Math.round(allProjects.reduce((acc, p) => acc + p.score, 0) / allProjects.length) : 0
+    }
+
+    console.log('🎉 Projects loaded successfully!')
+
     return NextResponse.json({
       success: true,
-      projects: userProjects,
-      user_email: session.user.email,
-      using_database: usingDatabase,
-      fallback_to_localstorage: !usingDatabase
+      projects: allProjects,
+      stats: finalStats,
+      data_source: {
+        airtable: airtableProjects.length,
+        localStorage: localStorageProjects.length,
+        error: airtableError ? airtableError.message : null
+      },
+      user: {
+        email: userEmail,
+        name: session.user.name
+      }
     })
 
   } catch (error) {
-    console.error('Errore API projects:', error)
+    console.error('❌ Error in projects API:', error)
+    
     return NextResponse.json({ 
-      success: true,
+      error: 'Errore durante il caricamento dei progetti',
+      details: error instanceof Error ? error.message : 'Unknown error',
       projects: [],
-      error: 'Errore caricamento progetti',
-      fallback_to_localstorage: true
-    })
+      stats: { total: 0, analyzed: 0, draft: 0, archived: 0, avgScore: 0 }
+    }, { status: 500 })
   }
 }
 
-// Endpoint per eliminare un progetto
-export async function DELETE(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
+    console.log('🆕 Creating new project...')
+    
+    // Verifica autenticazione
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userEmail = session.user.email
+    const { title, description, source, type = 'standard' } = await request.json()
+
+    if (!title || !description) {
+      return NextResponse.json({ error: 'Title and description are required' }, { status: 400 })
+    }
+
+    // Crea progetto in Airtable
+    try {
+      const savedProject = await airtableService.createProject({
+        title,
+        description,
+        source: source || 'form',
+        status: 'draft',
+        score: 0,
+        type
+      }, userEmail)
+
+      console.log('✅ Project created in Airtable:', savedProject.id)
+
+      const projectData = {
+        id: savedProject.id,
+        title: savedProject.fields.title,
+        description: savedProject.fields.description,
+        score: savedProject.fields.score,
+        status: savedProject.fields.status,
+        type: savedProject.fields.type,
+        source: savedProject.fields.source,
+        created_at: savedProject.fields.created_at,
+        updated_at: savedProject.fields.updated_at,
+        user_email: userEmail
+      }
+
+      return NextResponse.json({
+        success: true,
+        project: projectData,
+        saved_to_airtable: true
+      })
+
+    } catch (airtableError) {
+      console.error('⚠️ Airtable save failed:', airtableError)
+      
+      // Fallback: restituisci progetto con ID temporaneo
+      const tempProject = {
+        id: `proj_${Date.now()}`,
+        title,
+        description,
+        score: 0,
+        status: 'draft',
+        type,
+        source: source || 'form',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_email: userEmail
+      }
+
+      return NextResponse.json({
+        success: true,
+        project: tempProject,
+        saved_to_airtable: false,
+        error: 'Saved locally, sync to Airtable failed'
+      })
+    }
+
+  } catch (error) {
+    console.error('❌ Error creating project:', error)
+    return NextResponse.json({ 
+      error: 'Errore durante la creazione del progetto',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    console.log('🗑️ Deleting project...')
+    
+    // Verifica autenticazione
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('id')
 
     if (!projectId) {
-      return NextResponse.json({ error: 'ID progetto mancante' }, { status: 400 })
+      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
 
-    let deletedFromDatabase = false
-
-    // Prova a eliminare da Airtable se configurato
-    if (process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID) {
-      try {
-        console.log('Deleting from Airtable:', projectId)
-        
-        const success = await airtableService.deleteProject(projectId)
-        if (success) {
-          deletedFromDatabase = true
-          console.log('Successfully deleted from Airtable')
-        }
-        
-      } catch (airtableError) {
-        console.error('Error deleting from Airtable:', airtableError)
-        // Il client gestirà l'eliminazione da localStorage
+    // Elimina da Airtable
+    try {
+      const deleted = await airtableService.deleteProject(projectId)
+      
+      if (deleted) {
+        console.log('✅ Project deleted from Airtable:', projectId)
+        return NextResponse.json({
+          success: true,
+          message: 'Project deleted successfully',
+          deleted_from_airtable: true
+        })
+      } else {
+        throw new Error('Deletion failed')
       }
-    }
 
-    return NextResponse.json({
-      success: true,
-      deleted_from_database: deletedFromDatabase,
-      project_id: projectId
-    })
+    } catch (airtableError) {
+      console.error('⚠️ Airtable delete failed:', airtableError)
+      
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to delete from Airtable',
+        details: airtableError instanceof Error ? airtableError.message : 'Unknown error'
+      }, { status: 500 })
+    }
 
   } catch (error) {
-    console.error('Errore eliminazione progetto:', error)
+    console.error('❌ Error deleting project:', error)
     return NextResponse.json({ 
-      error: 'Errore durante l\'eliminazione del progetto' 
+      error: 'Errore durante l\'eliminazione del progetto',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 }
 
-// Endpoint per salvare progetti (fallback da localStorage)
-export async function POST(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
+    console.log('📝 Updating project...')
+    
+    // Verifica autenticazione
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { projects } = await request.json()
+    const { id, ...updates } = await request.json()
 
-    if (!Array.isArray(projects)) {
-      return NextResponse.json({ error: 'Formato progetti non valido' }, { status: 400 })
+    if (!id) {
+      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
 
-    let savedProjects = 0
+    // Aggiorna in Airtable
+    try {
+      const updatedProject = await airtableService.updateProject(id, updates)
+      
+      console.log('✅ Project updated in Airtable:', id)
 
-    // Salva in Airtable se configurato
-    if (process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID) {
-      try {
-        console.log('Syncing projects to Airtable...')
-        
-        // Inizializza utente
-        const user = await airtableService.initializeUser(
-          session.user.email,
-          session.user.name || undefined
-        )
-        
-        for (const project of projects) {
-          try {
-            // Controlla se il progetto esiste già
-            const existingProjects = await airtableService.findRecords('Projects', {
-              filterByFormula: `{title} = "${project.title}"`
-            })
-            
-            if (existingProjects.length === 0) {
-              await airtableService.createProject({
-                user_id: user.id!,
-                title: project.title,
-                description: project.description,
-                score: project.score,
-                status: project.status,
-                type: project.type,
-                source: project.source,
-                source_file: project.source_file,
-                created_at: project.created_at,
-                updated_at: project.updated_at
-              })
-              savedProjects++
-            }
-          } catch (projectError) {
-            console.error('Error saving individual project:', projectError)
-          }
-        }
-        
-        console.log(`Synced ${savedProjects} projects to Airtable`)
-        
-      } catch (airtableError) {
-        console.error('Error syncing to Airtable:', airtableError)
+      const projectData = {
+        id: updatedProject.id,
+        title: updatedProject.fields.title,
+        description: updatedProject.fields.description,
+        score: updatedProject.fields.score,
+        status: updatedProject.fields.status,
+        type: updatedProject.fields.type,
+        source: updatedProject.fields.source,
+        created_at: updatedProject.fields.created_at,
+        updated_at: updatedProject.fields.updated_at,
+        user_email: session.user.email
       }
-    }
 
-    return NextResponse.json({
-      success: true,
-      synced_projects: savedProjects,
-      message: `${savedProjects} progetti sincronizzati con il database`
-    })
+      return NextResponse.json({
+        success: true,
+        project: projectData,
+        updated_in_airtable: true
+      })
+
+    } catch (airtableError) {
+      console.error('⚠️ Airtable update failed:', airtableError)
+      
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to update in Airtable',
+        details: airtableError instanceof Error ? airtableError.message : 'Unknown error'
+      }, { status: 500 })
+    }
 
   } catch (error) {
-    console.error('Errore sincronizzazione progetti:', error)
+    console.error('❌ Error updating project:', error)
     return NextResponse.json({ 
-      error: 'Errore durante la sincronizzazione dei progetti' 
+      error: 'Errore durante l\'aggiornamento del progetto',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 }
