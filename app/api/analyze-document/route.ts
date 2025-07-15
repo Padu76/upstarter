@@ -190,15 +190,15 @@ async function performProfessionalAnalysis(extractedInfo: any, text: string): Pr
     // Importa il servizio Claude professionale
     const { analyzeProfessionalStartup } = await import('@/lib/claude-professional')
     
-    const input: IdeaAnalysisInput = {
-      idea: extractedInfo.title,
-      market: 'Da definire',
-      model: 'Da definire',
-      advantage: 'Da definire',
-      team: 'Da definire',
-      funding: 'Da definire',
+    const input: any = {
+      businessIdea: extractedInfo.title,
+      targetMarket: 'Da definire',
+      businessModel: 'Da definire', 
+      competitiveAdvantage: 'Da definire',
+      teamBackground: 'Da definire',
+      fundingNeeds: 'Da definire',
       timeline: 'Da definire',
-      additional: text
+      additionalInfo: text
     }
 
     const analysis = await analyzeProfessionalStartup(input)
