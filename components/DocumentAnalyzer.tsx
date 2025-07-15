@@ -86,12 +86,10 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
       if (file.type === 'text/plain') {
         fileContent = await file.text()
       } else if (file.type === 'application/pdf') {
-        // Per PDF useremo una libreria di parsing
         setError('Supporto PDF in arrivo. Usa documenti di testo per ora.')
         setAnalyzing(false)
         return
       } else {
-        // Per DOC/DOCX useremo una libreria di parsing
         setError('Supporto DOC/DOCX in arrivo. Usa documenti di testo per ora.')
         setAnalyzing(false)
         return
@@ -120,9 +118,19 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
       console.log('✅ Analysis result:', result)
 
       if (result.success) {
+        // 🎯 FIX: Estrai l'ID pulito senza doppio prefisso
+        const cleanAnalysisId = result.analysis.id.replace(/^analysis_/, '')
+        const analysisStorageKey = `analysis_${cleanAnalysisId}`
+        
+        console.log('🔧 ID Fixing:', {
+          originalId: result.analysis.id,
+          cleanId: cleanAnalysisId,
+          storageKey: analysisStorageKey
+        })
+
         // IMPORTANTE: Salva TUTTI i dati inclusi professional_analysis
         const completeAnalysisData = {
-          id: result.analysis.id,
+          id: cleanAnalysisId, // ID pulito senza prefisso
           project_id: result.project.id,
           title: result.project.title,
           description: result.project.description,
@@ -141,8 +149,8 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
           type: 'professional'
         }
 
-        // Salva nel localStorage con struttura completa
-        localStorage.setItem(`analysis_${result.analysis.id}`, JSON.stringify(completeAnalysisData))
+        // 🎯 FIX: Usa chiave corretta per il salvataggio
+        localStorage.setItem(analysisStorageKey, JSON.stringify(completeAnalysisData))
         
         // Salva anche nella lista progetti
         const existingProjects = JSON.parse(localStorage.getItem('projects') || '[]')
@@ -155,14 +163,15 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
           type: result.project.type,
           source: result.project.source,
           created_at: result.project.created_at,
-          analysis_id: result.analysis.id // Link all'analisi
+          analysis_id: cleanAnalysisId // 🎯 FIX: ID pulito
         }
         
         const updatedProjects = [newProject, ...existingProjects]
         localStorage.setItem('projects', JSON.stringify(updatedProjects))
 
         console.log('💾 Data saved to localStorage:', {
-          analysisKey: `analysis_${result.analysis.id}`,
+          analysisKey: analysisStorageKey,
+          projectAnalysisId: cleanAnalysisId,
           hasProfessionalAnalysis: !!completeAnalysisData.professional_analysis,
           overallScore: completeAnalysisData.overall_score,
           valuationRange: completeAnalysisData.professional_analysis?.valuation_range
@@ -175,9 +184,9 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
           onAnalysisComplete(completeAnalysisData)
         }
 
-        // Redirect alla pagina di analisi professionale
+        // 🎯 FIX: Redirect con ID pulito
         setTimeout(() => {
-          router.push(`/dashboard/analysis/${result.analysis.id}`)
+          router.push(`/dashboard/analysis/${cleanAnalysisId}`)
         }, 2000)
 
       } else {
