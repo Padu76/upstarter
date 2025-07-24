@@ -3,6 +3,33 @@ import GoogleProvider from 'next-auth/providers/google'
 import GitHubProvider from 'next-auth/providers/github'
 import CredentialsProvider from 'next-auth/providers/credentials'
 
+// Extend NextAuth types to include id in User
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      id: string
+      name?: string | null
+      email?: string | null
+      image?: string | null
+    }
+    provider?: string
+  }
+  
+  interface User {
+    id: string
+    name?: string | null
+    email?: string | null
+    image?: string | null
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    userId?: string
+    provider?: string
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
