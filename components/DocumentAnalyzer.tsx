@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Upload, FileText, X, AlertCircle, CheckCircle, BarChart3, Download } from 'lucide-react'
+import { Upload, FileText, X, AlertCircle, CheckCircle, BarChart3, Download, File } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -15,6 +15,7 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
   const [analyzing, setAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [processingStatus, setProcessingStatus] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { data: session } = useSession()
   const router = useRouter()
@@ -43,7 +44,11 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
       const isValidType = file.type === 'application/pdf' || 
                          file.type === 'text/plain' ||
                          file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                         file.type === 'application/msword'
+                         file.type === 'application/msword' ||
+                         file.name.toLowerCase().endsWith('.pdf') ||
+                         file.name.toLowerCase().endsWith('.doc') ||
+                         file.name.toLowerCase().endsWith('.docx') ||
+                         file.name.toLowerCase().endsWith('.txt')
       
       const isValidSize = file.size <= 10 * 1024 * 1024 // 10MB limit
       
@@ -63,6 +68,105 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
     setFiles(prev => prev.filter((_, i) => i !== index))
   }
 
+  const getFileIcon = (fileName: string) => {
+    const extension = fileName.toLowerCase().split('.').pop()
+    switch (extension) {
+      case 'pdf':
+        return <File className="w-5 h-5 text-red-600" />
+      case 'doc':
+      case 'docx':
+        return <FileText className="w-5 h-5 text-blue-600" />
+      case 'txt':
+        return <FileText className="w-5 h-5 text-gray-600" />
+      default:
+        return <File className="w-5 h-5 text-gray-600" />
+    }
+  }
+
+  const extractTextFromFile = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const fileExtension = file.name.toLowerCase().split('.').pop()
+      
+      if (fileExtension === 'txt') {
+        // Handle plain text files
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          resolve(e.target?.result as string)
+        }
+        reader.onerror = () => reject(new Error('Errore nella lettura del file TXT'))
+        reader.readAsText(file)
+      } else if (fileExtension === 'pdf') {
+        // Handle PDF files using PDF.js
+        setProcessingStatus('Elaborazione PDF in corso...')
+        
+        const reader = new FileReader()
+        reader.onload = async (e) => {
+          try {
+            // Dynamically import PDF.js
+            const pdfjsLib = await import('pdfjs-dist')
+            
+            // Set worker source
+            pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`
+            
+            const arrayBuffer = e.target?.result as ArrayBuffer
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+            
+            let fullText = ''
+            
+            // Extract text from each page
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+              const page = await pdf.getPage(pageNum)
+              const textContent = await page.getTextContent()
+              const pageText = textContent.items
+                .filter((item: any) => item.str)
+                .map((item: any) => item.str)
+                .join(' ')
+              fullText += pageText + '\n'
+            }
+            
+            if (fullText.trim().length === 0) {
+              reject(new Error('Il PDF sembra essere vuoto o composto solo da immagini'))
+            }
+            
+            resolve(fullText)
+          } catch (error) {
+            console.error('PDF processing error:', error)
+            reject(new Error('Errore nell\'elaborazione del PDF. Assicurati che sia un PDF con testo selezionabile.'))
+          }
+        }
+        reader.onerror = () => reject(new Error('Errore nella lettura del file PDF'))
+        reader.readAsArrayBuffer(file)
+      } else if (fileExtension === 'doc' || fileExtension === 'docx') {
+        // Handle Word documents using mammoth.js
+        setProcessingStatus('Elaborazione documento Word in corso...')
+        
+        const reader = new FileReader()
+        reader.onload = async (e) => {
+          try {
+            // Dynamically import mammoth.js
+            const mammoth = await import('mammoth')
+            
+            const arrayBuffer = e.target?.result as ArrayBuffer
+            const result = await mammoth.extractRawText({ arrayBuffer })
+            
+            if (result.value.trim().length === 0) {
+              reject(new Error('Il documento Word sembra essere vuoto'))
+            }
+            
+            resolve(result.value)
+          } catch (error) {
+            console.error('Word processing error:', error)
+            reject(new Error('Errore nell\'elaborazione del documento Word'))
+          }
+        }
+        reader.onerror = () => reject(new Error('Errore nella lettura del file Word'))
+        reader.readAsArrayBuffer(file)
+      } else {
+        reject(new Error('Formato file non supportato'))
+      }
+    })
+  }
+
   const analyzeDocument = async () => {
     if (files.length === 0) {
       setError('Seleziona almeno un documento')
@@ -76,26 +180,23 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
 
     setAnalyzing(true)
     setError(null)
+    setProcessingStatus('Inizializzazione analisi...')
 
     try {
       const file = files[0] // Analizza il primo file
-      console.log('📄 Analyzing file:', file.name)
+      console.log('📄 Analyzing file:', file.name, 'Type:', file.type)
 
-      // Leggi il contenuto del file
-      let fileContent = ''
-      if (file.type === 'text/plain') {
-        fileContent = await file.text()
-      } else if (file.type === 'application/pdf') {
-        setError('Supporto PDF in arrivo. Usa documenti di testo per ora.')
-        setAnalyzing(false)
-        return
-      } else {
-        setError('Supporto DOC/DOCX in arrivo. Usa documenti di testo per ora.')
-        setAnalyzing(false)
-        return
+      // Extract text from file based on type
+      setProcessingStatus('Estrazione contenuto documento...')
+      const fileContent = await extractTextFromFile(file)
+      
+      console.log('📄 Extracted content length:', fileContent.length)
+
+      if (fileContent.length < 100) {
+        throw new Error('Il documento contiene troppo poco testo per essere analizzato efficacemente')
       }
 
-      console.log('📄 File content length:', fileContent.length)
+      setProcessingStatus('Avvio analisi AI professionale...')
 
       // Chiamata API per analisi professionale
       const response = await fetch('/api/analyze-document', {
@@ -105,7 +206,8 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
         },
         body: JSON.stringify({
           fileName: file.name,
-          text: fileContent
+          text: fileContent,
+          fileType: file.type || 'unknown'
         })
       })
 
@@ -118,6 +220,8 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
       console.log('✅ Analysis result:', result)
 
       if (result.success) {
+        setProcessingStatus('Salvataggio risultati...')
+        
         // 🎯 FIX: Estrai l'ID pulito senza doppio prefisso
         const cleanAnalysisId = result.analysis.id.replace(/^analysis_/, '')
         const analysisStorageKey = `analysis_${cleanAnalysisId}`
@@ -146,7 +250,13 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
           created_at: result.analysis.created_at,
           updated_at: result.project.updated_at,
           source: 'document_professional',
-          type: 'professional'
+          type: 'professional',
+          file_info: {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            processed_at: new Date().toISOString()
+          }
         }
 
         // 🎯 FIX: Usa chiave corretta per il salvataggio
@@ -163,7 +273,11 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
           type: result.project.type,
           source: result.project.source,
           created_at: result.project.created_at,
-          analysis_id: cleanAnalysisId // 🎯 FIX: ID pulito
+          analysis_id: cleanAnalysisId, // 🎯 FIX: ID pulito
+          file_info: {
+            name: file.name,
+            type: file.type
+          }
         }
         
         const updatedProjects = [newProject, ...existingProjects]
@@ -174,9 +288,11 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
           projectAnalysisId: cleanAnalysisId,
           hasProfessionalAnalysis: !!completeAnalysisData.professional_analysis,
           overallScore: completeAnalysisData.overall_score,
-          valuationRange: completeAnalysisData.professional_analysis?.valuation_range
+          valuationRange: completeAnalysisData.professional_analysis?.valuation_range,
+          fileType: file.type
         })
 
+        setProcessingStatus('Analisi completata con successo!')
         setAnalysisResult(completeAnalysisData)
 
         // Chiama il callback se fornito
@@ -196,8 +312,12 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
     } catch (error) {
       console.error('❌ Analysis error:', error)
       setError(error instanceof Error ? error.message : 'Errore sconosciuto durante l\'analisi')
+      setProcessingStatus('')
     } finally {
-      setAnalyzing(false)
+      if (!analysisResult) {
+        setAnalyzing(false)
+        setProcessingStatus('')
+      }
     }
   }
 
@@ -208,7 +328,14 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
           <div className="text-center mb-6">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Analisi Professionale Completata</h2>
-            <p className="text-gray-600">Il tuo business plan è stato analizzato con successo</p>
+            <p className="text-gray-600">Il tuo documento è stato analizzato con successo</p>
+            {analysisResult.file_info && (
+              <div className="mt-2 flex items-center justify-center space-x-2 text-sm text-gray-500">
+                {getFileIcon(analysisResult.file_info.name)}
+                <span>{analysisResult.file_info.name}</span>
+                <span>({(analysisResult.file_info.size / 1024 / 1024).toFixed(2)} MB)</span>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -273,6 +400,20 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
         <p className="text-lg text-gray-600">
           Carica il tuo business plan per un'analisi dettagliata stile venture capital
         </p>
+        <div className="mt-4 flex items-center justify-center space-x-6 text-sm text-gray-500">
+          <div className="flex items-center space-x-2">
+            <File className="w-4 h-4 text-red-600" />
+            <span>PDF</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <FileText className="w-4 h-4 text-blue-600" />
+            <span>DOC/DOCX</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <FileText className="w-4 h-4 text-gray-600" />
+            <span>TXT</span>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -326,8 +467,8 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
             {files.map((file, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center">
-                  <FileText className="w-5 h-5 text-blue-600 mr-3" />
-                  <div>
+                  {getFileIcon(file.name)}
+                  <div className="ml-3">
                     <p className="font-medium text-gray-900">{file.name}</p>
                     <p className="text-sm text-gray-500">
                       {(file.size / 1024 / 1024).toFixed(2)} MB
@@ -337,6 +478,7 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
                 <button
                   onClick={() => removeFile(index)}
                   className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                  disabled={analyzing}
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -376,8 +518,13 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
             <h4 className="font-semibold text-blue-900">Analisi in corso...</h4>
           </div>
+          {processingStatus && (
+            <div className="mb-4">
+              <p className="text-sm text-blue-800 font-medium">{processingStatus}</p>
+            </div>
+          )}
           <div className="space-y-2 text-sm text-blue-800">
-            <p>✅ Estrazione del contenuto</p>
+            <p>✅ Estrazione del contenuto dal documento</p>
             <p>🔍 Analisi di mercato e competitività</p>
             <p>💰 Valutazione con metodi VC professionali</p>
             <p>📊 Calcolo score e raccomandazioni</p>
@@ -385,6 +532,29 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
           </div>
         </div>
       )}
+
+      {/* Instructions */}
+      <div className="mt-8 bg-gray-50 rounded-lg p-6">
+        <h4 className="font-semibold text-gray-900 mb-3">Consigli per un'analisi ottimale:</h4>
+        <ul className="space-y-2 text-sm text-gray-600">
+          <li className="flex items-start space-x-2">
+            <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+            <span>Carica documenti con almeno 2-3 pagine di contenuto strutturato</span>
+          </li>
+          <li className="flex items-start space-x-2">
+            <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+            <span>Includi sezioni su mercato, competitor, team, prodotto e finanze</span>
+          </li>
+          <li className="flex items-start space-x-2">
+            <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+            <span>Per PDF: assicurati che il testo sia selezionabile (non solo immagini)</span>
+          </li>
+          <li className="flex items-start space-x-2">
+            <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+            <span>Massimo 10MB per file - documenti più grandi verranno elaborati più lentamente</span>
+          </li>
+        </ul>
+      </div>
     </div>
   )
 }
