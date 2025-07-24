@@ -415,51 +415,68 @@ export default function AICoach({ project, analysis, onImprove, onClose }: AICoa
   }
 
   const combineDataForReanalysis = (steps: WizardStep[], documents: Record<string, string>) => {
-    // Estrae dati esistenti dal progetto
+    // Crea struttura dati compatibile con QuestionnaireData
     const baseData = {
       project_name: project?.title || 'Progetto Migliorato',
       project_description: project?.description || 'Progetto con dati integrati',
-      problem_solution: Object.values(documents).join('\n\n') || 'Soluzione migliorata'
+      problem_solution: Object.values(documents).join('\n\n') || 'Soluzione migliorata',
+      // Campi obbligatori per QuestionnaireData
+      team_size: '2 persone',
+      team_experience: 'Esperienza in crescita',
+      target_market: 'Mercato target definito',
+      market_validation: 'Validazione in corso',
+      product_stage: 'MVP',
+      unique_value: 'Valore unico in sviluppo',
+      competitors: 'Competitor identificati',
+      competitive_advantage: 'Vantaggio competitivo definito',
+      business_model: 'Modello di business strutturato',
+      funding_needs: '500K EUR',
+      // Campi opzionali
+      team_advisors: '',
+      market_size: '',
+      customer_feedback: '',
+      revenue_projections: '',
+      current_revenue: ''
     }
 
-    // Integra dati dai form
+    // Integra dati dai form con override dei valori base
     steps.forEach(step => {
       const formData = step.formData
       
       switch (step.area.id) {
         case 'market_analysis':
           Object.assign(baseData, {
-            target_market: formData.target_segments || 'Mercato definito',
-            market_size: `TAM: ${formData.tam_size}, SAM: ${formData.sam_size}, SOM: ${formData.som_size}`,
-            market_validation: formData.market_validation
+            target_market: formData.target_segments || baseData.target_market,
+            market_size: formData.tam_size ? `TAM: ${formData.tam_size}, SAM: ${formData.sam_size}, SOM: ${formData.som_size}` : '',
+            market_validation: formData.market_validation || baseData.market_validation
           })
           break
         case 'competitive_analysis':
           Object.assign(baseData, {
-            competitors: `${formData.direct_competitors}\n${formData.indirect_competitors}`,
-            competitive_advantage: formData.competitive_advantage
+            competitors: formData.direct_competitors ? `${formData.direct_competitors}\n${formData.indirect_competitors}` : baseData.competitors,
+            competitive_advantage: formData.competitive_advantage || baseData.competitive_advantage
           })
           break
         case 'team_strengthening':
           Object.assign(baseData, {
-            team_size: formData.current_team ? '3-4 persone' : '2 persone',
-            team_experience: formData.track_record,
-            team_advisors: formData.advisors
+            team_size: formData.current_team ? (formData.current_team.length > 200 ? '5+ persone' : '3-4 persone') : baseData.team_size,
+            team_experience: formData.track_record || baseData.team_experience,
+            team_advisors: formData.advisors || ''
           })
           break
         case 'financial_model':
           Object.assign(baseData, {
-            business_model: formData.revenue_model,
-            revenue_projections: formData.revenue_projections,
-            funding_needs: '500K EUR',
-            current_revenue: formData.ltv ? 'Ricavi in crescita' : undefined
+            business_model: formData.revenue_model || baseData.business_model,
+            revenue_projections: formData.revenue_projections || '',
+            funding_needs: formData.ltv ? '750K EUR' : baseData.funding_needs,
+            current_revenue: formData.ltv ? 'Ricavi in crescita' : ''
           })
           break
         case 'product_validation':
           Object.assign(baseData, {
-            product_stage: formData.product_stage,
-            unique_value: 'Valore unico validato',
-            customer_feedback: formData.customer_feedback
+            product_stage: formData.product_stage || baseData.product_stage,
+            unique_value: formData.pmf_evidence ? 'Valore unico validato con evidenze' : baseData.unique_value,
+            customer_feedback: formData.customer_feedback || ''
           })
           break
       }
