@@ -385,7 +385,9 @@ export default function AICoach({ project, analysis, onImprove, onClose }: AICoa
       
     } catch (error) {
       console.error('❌ Error processing improvements:', error)
-      setAnalysisProgress(`Errore durante l'analisi: ${error.message}`)
+      // FIX TYPESCRIPT: Gestione sicura del tipo unknown
+      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto'
+      setAnalysisProgress(`Errore durante l'analisi: ${errorMessage}`)
       
       // Mostra comunque un risultato di esempio per test
       setTimeout(() => {
