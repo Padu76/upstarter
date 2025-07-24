@@ -284,7 +284,7 @@ export default function HomePage() {
                       </li>
                     </ul>
                     <Link
-                      href="/auth/signup"
+                      href="/team-up"
                       className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold"
                     >
                       Trova il Tuo Team
