@@ -79,14 +79,33 @@ export default function TeamUpPage() {
     }
   }
 
-  const handleProfileCreated = (profile: TeamProfile) => {
-    setUserProfile(profile)
+  const handleProfileComplete = (profileData: any) => {
+    // Convert TeamProfileData to TeamProfile format
+    const newProfile: TeamProfile = {
+      id: Date.now().toString(), // Temporary ID
+      user_id: session?.user?.email || '',
+      user_email: session?.user?.email || '',
+      full_name: profileData.full_name,
+      professional_title: profileData.professional_title,
+      bio: profileData.bio,
+      location: profileData.location,
+      role_seeking: profileData.role_seeking,
+      availability: profileData.availability,
+      skills: profileData.skills,
+      experience_years: profileData.experience_years,
+      industry_focus: profileData.industry_focus,
+      equity_expectations: profileData.equity_expectations,
+      portfolio_url: profileData.portfolio_url,
+      linkedin_url: profileData.linkedin_url,
+      github_url: profileData.github_url,
+      website_url: profileData.website_url,
+      status: 'active',
+      created_at: new Date().toISOString()
+    }
+    
+    setUserProfile(newProfile)
     setHasProfile(true)
     setActiveTab('browse')
-  }
-
-  const handleProfileUpdated = (profile: TeamProfile) => {
-    setUserProfile(profile)
   }
 
   const handleViewProfile = (profile: TeamProfile) => {
@@ -260,9 +279,7 @@ export default function TeamUpPage() {
         {activeTab === 'setup' && (
           <div className="py-6">
             <TeamProfileSetup
-              onProfileCreated={handleProfileCreated}
-              existingProfile={userProfile}
-              onProfileUpdated={handleProfileUpdated}
+              onComplete={handleProfileComplete}
             />
           </div>
         )}
