@@ -41,11 +41,9 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
 
   const handleFiles = (fileList: File[]) => {
     const validFiles = fileList.filter(file => {
-      const isValidType = file.type === 'application/pdf' || 
-                         file.type === 'text/plain' ||
+      const isValidType = file.type === 'text/plain' ||
                          file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                          file.type === 'application/msword' ||
-                         file.name.toLowerCase().endsWith('.pdf') ||
                          file.name.toLowerCase().endsWith('.doc') ||
                          file.name.toLowerCase().endsWith('.docx') ||
                          file.name.toLowerCase().endsWith('.txt')
@@ -56,7 +54,7 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
     })
 
     if (validFiles.length !== fileList.length) {
-      setError('Alcuni file non sono supportati. Usa PDF, DOC, DOCX o TXT (max 10MB)')
+      setError('Alcuni file non sono supportati. Usa DOC, DOCX o TXT (max 10MB). PDF supporto in arrivo!')
     } else {
       setError(null)
     }
@@ -71,8 +69,6 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
   const getFileIcon = (fileName: string) => {
     const extension = fileName.toLowerCase().split('.').pop()
     switch (extension) {
-      case 'pdf':
-        return <File className="w-5 h-5 text-red-600" />
       case 'doc':
       case 'docx':
         return <FileText className="w-5 h-5 text-blue-600" />
@@ -95,47 +91,6 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
         }
         reader.onerror = () => reject(new Error('Errore nella lettura del file TXT'))
         reader.readAsText(file)
-      } else if (fileExtension === 'pdf') {
-        // Handle PDF files using PDF.js
-        setProcessingStatus('Elaborazione PDF in corso...')
-        
-        const reader = new FileReader()
-        reader.onload = async (e) => {
-          try {
-            // Dynamically import PDF.js
-            const pdfjsLib = await import('pdfjs-dist')
-            
-            // Set worker source
-            pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`
-            
-            const arrayBuffer = e.target?.result as ArrayBuffer
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-            
-            let fullText = ''
-            
-            // Extract text from each page
-            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-              const page = await pdf.getPage(pageNum)
-              const textContent = await page.getTextContent()
-              const pageText = textContent.items
-                .filter((item: any) => item.str)
-                .map((item: any) => item.str)
-                .join(' ')
-              fullText += pageText + '\n'
-            }
-            
-            if (fullText.trim().length === 0) {
-              reject(new Error('Il PDF sembra essere vuoto o composto solo da immagini'))
-            }
-            
-            resolve(fullText)
-          } catch (error) {
-            console.error('PDF processing error:', error)
-            reject(new Error('Errore nell\'elaborazione del PDF. Assicurati che sia un PDF con testo selezionabile.'))
-          }
-        }
-        reader.onerror = () => reject(new Error('Errore nella lettura del file PDF'))
-        reader.readAsArrayBuffer(file)
       } else if (fileExtension === 'doc' || fileExtension === 'docx') {
         // Handle Word documents using mammoth.js
         setProcessingStatus('Elaborazione documento Word in corso...')
@@ -402,16 +357,16 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
         </p>
         <div className="mt-4 flex items-center justify-center space-x-6 text-sm text-gray-500">
           <div className="flex items-center space-x-2">
-            <File className="w-4 h-4 text-red-600" />
-            <span>PDF</span>
-          </div>
-          <div className="flex items-center space-x-2">
             <FileText className="w-4 h-4 text-blue-600" />
             <span>DOC/DOCX</span>
           </div>
           <div className="flex items-center space-x-2">
             <FileText className="w-4 h-4 text-gray-600" />
             <span>TXT</span>
+          </div>
+          <div className="flex items-center space-x-2 text-orange-500">
+            <File className="w-4 h-4" />
+            <span>PDF (presto disponibile)</span>
           </div>
         </div>
       </div>
@@ -452,12 +407,12 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.txt"
+            accept=".doc,.docx,.txt"
             onChange={(e) => handleFiles(Array.from(e.target.files || []))}
             className="hidden"
           />
           <p className="text-sm text-gray-500 mt-2">
-            Supporta PDF, DOC, DOCX, TXT (max 10MB)
+            Supporta DOC, DOCX, TXT (max 10MB) - PDF in arrivo!
           </p>
         </div>
 
@@ -547,7 +502,7 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
           </li>
           <li className="flex items-start space-x-2">
             <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-            <span>Per PDF: assicurati che il testo sia selezionabile (non solo immagini)</span>
+            <span>Supporto PDF disponibile nella prossima versione</span>
           </li>
           <li className="flex items-start space-x-2">
             <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
