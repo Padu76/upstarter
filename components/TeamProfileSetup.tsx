@@ -7,7 +7,7 @@ import {
   Upload, Link2, Linkedin, Github, Globe,
   CheckCircle, AlertCircle, ChevronRight, ChevronLeft,
   Plus, X, Code, Palette, TrendingUp, Zap,
-  Brain, Target, Award, Save, Eye
+  Brain, Target, Award, Save, Eye, Wifi, WifiOff
 } from 'lucide-react'
 
 interface TeamProfileData {
@@ -50,6 +50,14 @@ interface TeamProfileData {
 
 interface ValidationErrors {
   [key: string]: string
+}
+
+interface SaveResult {
+  success: boolean
+  saved_locally: boolean
+  saved_remotely: boolean
+  error?: string
+  profile_id?: string
 }
 
 const SKILLS_OPTIONS = [
@@ -104,15 +112,17 @@ export default function TeamProfileSetup({ onComplete, onClose }: {
     equity_expectations: '',
     compensation_needs: 'flexible',
     remote_preference: 'flexible',
-    team_size_preference: '',
-    investment_stage_preference: [],
-    geographic_preference: []
+    team_size_preference: '2-5 membri',
+    investment_stage_preference: ['Pre-Seed', 'Seed'],
+    geographic_preference: ['Italia', 'Europa']
   })
   
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [previewMode, setPreviewMode] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<SaveResult | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const steps = [
@@ -166,28 +176,32 @@ export default function TeamProfileSetup({ onComplete, onClose }: {
   const saveProgress = () => {
     setIsSaving(true)
     const progressKey = `team_profile_${session?.user?.email}`
-    localStorage.setItem(progressKey, JSON.stringify({
-      profileData,
-      currentStep,
-      timestamp: Date.now()
-    }))
+    try {
+      localStorage.setItem(progressKey, JSON.stringify({
+        profileData,
+        currentStep,
+        timestamp: Date.now()
+      }))
+    } catch (error) {
+      console.warn('Unable to save progress to localStorage:', error)
+    }
     setTimeout(() => setIsSaving(false), 1000)
   }
 
   const loadProgress = () => {
     const progressKey = `team_profile_${session?.user?.email}`
-    const saved = localStorage.getItem(progressKey)
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem(progressKey)
+      if (saved) {
         const { profileData: savedData, currentStep: savedStep, timestamp } = JSON.parse(saved)
         // Load if saved within last 7 days
         if (Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000) {
           setProfileData(prev => ({ ...prev, ...savedData }))
           setCurrentStep(savedStep)
         }
-      } catch (error) {
-        console.warn('Failed to load saved progress')
       }
+    } catch (error) {
+      console.warn('Failed to load saved progress:', error)
     }
   }
 
@@ -278,36 +292,180 @@ export default function TeamProfileSetup({ onComplete, onClose }: {
     }
   }
 
+  const saveToAirtable = async (profileData: TeamProfileData): Promise<{ success: boolean; error?: string; id?: string }> => {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15s timeout
+
+      const response = await fetch('/api/team-profile', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          user_id: session?.user?.email,
+          user_email: session?.user?.email,
+          ...profileData,
+          // Ensure arrays are properly formatted
+          skills: profileData.skills || [],
+          industry_focus: profileData.industry_focus || [],
+          previous_roles: profileData.previous_roles || [],
+          startup_stage_preference: profileData.startup_stage_preference || [],
+          investment_stage_preference: profileData.investment_stage_preference || [],
+          geographic_preference: profileData.geographic_preference || [],
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }),
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        let errorMessage = `HTTP ${response.status}`
+        
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.error || errorData.message || errorMessage
+        } catch {
+          errorMessage = errorText || errorMessage
+        }
+
+        return { 
+          success: false, 
+          error: `Errore server (${response.status}): ${errorMessage}` 
+        }
+      }
+
+      const result = await response.json()
+      return { success: true, id: result.id }
+
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        return { success: false, error: 'Timeout - riprova tra qualche secondo' }
+      }
+      
+      console.error('Airtable save error:', error)
+      
+      if (error.message?.includes('fetch')) {
+        return { success: false, error: 'Errore di connessione - verifica la tua rete' }
+      }
+      
+      return { 
+        success: false, 
+        error: error.message || 'Errore sconosciuto durante il salvataggio' 
+      }
+    }
+  }
+
+  const saveLocally = (profileData: TeamProfileData): boolean => {
+    try {
+      const localKey = `team_profile_final_${session?.user?.email}`
+      const profileWithMetadata = {
+        ...profileData,
+        saved_at: new Date().toISOString(),
+        local_id: `local_${Date.now()}`,
+        status: 'pending_sync'
+      }
+      localStorage.setItem(localKey, JSON.stringify(profileWithMetadata))
+      return true
+    } catch (error) {
+      console.error('Local save error:', error)
+      return false
+    }
+  }
+
   const handleComplete = async () => {
     if (!validateCurrentStep()) return
     
     setIsLoading(true)
+    setSaveStatus(null)
+    
     try {
-      // Save to Airtable via API
-      const response = await fetch('/api/team-profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: session?.user?.email,
-          ...profileData,
-          created_at: new Date().toISOString()
-        })
-      })
-
-      if (response.ok) {
-        // Clear saved progress
-        const progressKey = `team_profile_${session?.user?.email}`
-        localStorage.removeItem(progressKey)
-        
-        if (onComplete) {
-          onComplete(profileData)
-        }
-      } else {
-        throw new Error('Failed to save profile')
+      let result: SaveResult = {
+        success: false,
+        saved_locally: false,
+        saved_remotely: false
       }
+
+      // Tentativo salvataggio locale (sempre prima)
+      const localSaved = saveLocally(profileData)
+      result.saved_locally = localSaved
+
+      // Tentativo salvataggio remoto
+      const remoteSaveResult = await saveToAirtable(profileData)
+      result.saved_remotely = remoteSaveResult.success
+      
+      if (remoteSaveResult.success) {
+        result.success = true
+        result.profile_id = remoteSaveResult.id
+        
+        // Pulisci i dati salvati temporaneamente
+        const progressKey = `team_profile_${session?.user?.email}`
+        try {
+          localStorage.removeItem(progressKey)
+        } catch (error) {
+          console.warn('Unable to clear progress:', error)
+        }
+        
+        setSaveStatus(result)
+        
+        // Chiama onComplete dopo un breve delay per mostrare il successo
+        setTimeout(() => {
+          if (onComplete) {
+            onComplete(profileData)
+          }
+        }, 2000)
+        
+      } else {
+        // Salvataggio remoto fallito, ma locale riuscito
+        result.error = remoteSaveResult.error
+        result.success = localSaved // Successo se almeno locale funziona
+        
+        setSaveStatus(result)
+        
+        if (localSaved) {
+          // Offri possibilità di retry o continuare con salvataggio locale
+          setTimeout(() => {
+            if (retryCount < 2) {
+              // Auto-retry per errori di rete
+              if (remoteSaveResult.error?.includes('connessione') || remoteSaveResult.error?.includes('timeout')) {
+                setRetryCount(prev => prev + 1)
+                handleComplete()
+                return
+              }
+            }
+            
+            // Mostra opzioni all'utente
+            const shouldContinue = confirm(
+              `Profilo salvato localmente ma non sincronizzato online.\n\n` +
+              `Errore: ${remoteSaveResult.error}\n\n` +
+              `Vuoi continuare? Potrai sincronizzare più tardi.`
+            )
+            
+            if (shouldContinue && onComplete) {
+              onComplete(profileData)
+            }
+          }, 3000)
+        } else {
+          // Entrambi i salvataggi falliti
+          setTimeout(() => {
+            alert(`Errore durante il salvataggio:\n${remoteSaveResult.error}\n\nRiprova o contatta il supporto.`)
+          }, 2000)
+        }
+      }
+      
     } catch (error) {
-      console.error('Error saving team profile:', error)
-      alert('Errore nel salvataggio del profilo. Riprova.')
+      console.error('Unexpected error during save:', error)
+      setSaveStatus({
+        success: false,
+        saved_locally: false,
+        saved_remotely: false,
+        error: 'Errore imprevisto durante il salvataggio'
+      })
     } finally {
       setIsLoading(false)
     }
@@ -480,10 +638,37 @@ export default function TeamProfileSetup({ onComplete, onClose }: {
               <p className="text-blue-100 mt-1">Connettiti con co-founder e startup innovative</p>
             </div>
             <div className="flex items-center gap-3">
+              {/* Save Status Indicator */}
               {isSaving && (
                 <div className="flex items-center gap-2 text-blue-100">
                   <Save className="w-4 h-4 animate-pulse" />
                   <span className="text-sm">Salvando...</span>
+                </div>
+              )}
+              {saveStatus && (
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                  saveStatus.success 
+                    ? 'bg-green-100 text-green-800' 
+                    : saveStatus.saved_locally 
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
+                }`}>
+                  {saveStatus.success ? (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Salvato!</span>
+                    </>
+                  ) : saveStatus.saved_locally ? (
+                    <>
+                      <WifiOff className="w-4 h-4" />
+                      <span>Salvato localmente</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-4 h-4" />
+                      <span>Errore salvataggio</span>
+                    </>
+                  )}
                 </div>
               )}
               <button
