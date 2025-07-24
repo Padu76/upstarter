@@ -156,9 +156,6 @@ export const authOptions: NextAuthOptions = {
   // Security
   secret: process.env.NEXTAUTH_SECRET,
   
-  // Environment
-  trustHost: true,
-  
   // Debug only in development
   debug: process.env.NODE_ENV === 'development',
   
