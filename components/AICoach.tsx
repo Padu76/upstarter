@@ -1409,7 +1409,7 @@ export default function AICoach({ project, analysis, onImprove, onClose }: AICoa
                       Breakdown per Area
                     </h4>
                     <div className="space-y-3">
-                      {analyticsData.areaBreakdown.map((area, index) => (
+                      {analyticsData.areaBreakdown.map((area: any, index: number) => (
                         <div key={index} className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-700">{area.area}</span>
@@ -1437,7 +1437,7 @@ export default function AICoach({ project, analysis, onImprove, onClose }: AICoa
                       Benchmark vs Industry
                     </h4>
                     <div className="space-y-4">
-                      {analyticsData.benchmarkComparison.map((metric, index) => (
+                      {analyticsData.benchmarkComparison.map((metric: any, index: number) => (
                         <div key={index} className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-700">{metric.metric}</span>
@@ -1476,7 +1476,7 @@ export default function AICoach({ project, analysis, onImprove, onClose }: AICoa
                       Timeline Progetto
                     </h4>
                     <div className="space-y-4">
-                      {analyticsData.progressTimeline.map((milestone, index) => (
+                      {analyticsData.progressTimeline.map((milestone: any, index: number) => (
                         <div key={index} className="flex items-center space-x-3">
                           <div className={`w-3 h-3 rounded-full ${
                             milestone.status === 'completed' ? 'bg-green-500' :
