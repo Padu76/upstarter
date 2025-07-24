@@ -1,4 +1,4 @@
-// Analizzatore professionale startup - Versione completa con Executive Summary
+// Analizzatore professionale startup - Versione corretta con metodi multipli
 export interface StartupAnalysisResult {
   overall_score: number
   valuation_range: {
@@ -21,62 +21,193 @@ export interface StartupAnalysisResult {
   executive_summary: string
 }
 
+// Interfaccia per dati questionario strutturato
+export interface QuestionnaireData {
+  project_name: string
+  project_description: string
+  problem_solution: string
+  team_size: string
+  team_experience: string
+  team_advisors?: string
+  target_market: string
+  market_size?: string
+  market_validation: string
+  product_stage: string
+  unique_value: string
+  customer_feedback?: string
+  competitors: string
+  competitive_advantage: string
+  business_model: string
+  revenue_projections?: string
+  funding_needs: string
+  current_revenue?: string
+}
+
 export class ProfessionalStartupAnalyzer {
   
+  // Metodo per analisi da questionario guidato
+  async analyzeFromQuestionnaire(data: QuestionnaireData): Promise<StartupAnalysisResult> {
+    console.log('🧠 AI Analyzer: Starting questionnaire-based analysis...')
+    
+    try {
+      // Converte i dati del questionario in formato per l'analisi
+      const analysisData = this.convertQuestionnaireToAnalysisData(data)
+      
+      // Esegue tutte le analisi professionali
+      const berkusAnalysis = this.performBerkusAnalysis(analysisData)
+      const scorecardAnalysis = this.performScorecardAnalysis(analysisData)
+      const riskFactorAnalysis = this.performRiskFactorAnalysis(analysisData)
+      const marketAnalysis = this.performMarketAnalysis(analysisData)
+      const competitiveAnalysis = this.performCompetitiveAnalysis(analysisData)
+      const financialAnalysis = this.performFinancialAnalysis(analysisData)
+      const teamAnalysis = this.performTeamAnalysis(analysisData)
+      const productAnalysis = this.performProductAnalysis(analysisData)
+      const investmentReadiness = this.assessInvestmentReadiness(analysisData)
+      
+      // Calcola score complessivo
+      const overallScore = this.calculateOverallScore({
+        berkus: berkusAnalysis.total_valuation,
+        scorecard: scorecardAnalysis.weighted_score,
+        market: marketAnalysis.som_analysis.confidence,
+        team: teamAnalysis.founder_market_fit.score,
+        product: productAnalysis.product_market_fit.score,
+        financial: financialAnalysis.revenue_model.clarity
+      })
+      
+      // Calcola range di valutazione
+      const valuationRange = this.calculateValuationRange(berkusAnalysis, scorecardAnalysis, riskFactorAnalysis)
+      
+      // Genera raccomandazioni e next steps
+      const recommendations = this.generateRecommendations(analysisData, overallScore)
+      const missingAreas = this.identifyMissingAreas(analysisData)
+      const nextSteps = this.generateNextSteps(overallScore, investmentReadiness)
+      
+      // Genera Executive Summary dettagliato
+      const executiveSummary = this.generateExecutiveSummary(analysisData, overallScore, valuationRange)
+      
+      console.log('✅ AI Analyzer: Questionnaire analysis completed successfully')
+      
+      return {
+        overall_score: overallScore,
+        valuation_range: valuationRange,
+        berkus_analysis: berkusAnalysis,
+        scorecard_analysis: scorecardAnalysis,
+        risk_factor_analysis: riskFactorAnalysis,
+        market_analysis: marketAnalysis,
+        competitive_analysis: competitiveAnalysis,
+        financial_analysis: financialAnalysis,
+        team_analysis: teamAnalysis,
+        product_analysis: productAnalysis,
+        investment_readiness: investmentReadiness,
+        recommendations,
+        missing_areas: missingAreas,
+        next_steps: nextSteps,
+        executive_summary: executiveSummary
+      }
+      
+    } catch (error) {
+      console.error('❌ AI Analyzer: Error in questionnaire analysis:', error)
+      throw new Error('Errore durante l\'analisi del questionario')
+    }
+  }
+  
+  // Metodo per analisi da documento (manteniamo compatibilità)
   async analyzeStartup(title: string, content: string): Promise<StartupAnalysisResult> {
-    console.log('🔍 Starting professional startup analysis...')
+    console.log('🔍 Starting professional startup analysis from document...')
     
-    // Analizza il contenuto per estrarre informazioni chiave
-    const extractedData = this.extractKeyInformation(content)
-    
-    // Esegue tutte le analisi professionali
-    const berkusAnalysis = this.performBerkusAnalysis(extractedData)
-    const scorecardAnalysis = this.performScorecardAnalysis(extractedData)
-    const riskFactorAnalysis = this.performRiskFactorAnalysis(extractedData)
-    const marketAnalysis = this.performMarketAnalysis(extractedData)
-    const competitiveAnalysis = this.performCompetitiveAnalysis(extractedData)
-    const financialAnalysis = this.performFinancialAnalysis(extractedData)
-    const teamAnalysis = this.performTeamAnalysis(extractedData)
-    const productAnalysis = this.performProductAnalysis(extractedData)
-    const investmentReadiness = this.assessInvestmentReadiness(extractedData)
-    
-    // Calcola score complessivo
-    const overallScore = this.calculateOverallScore({
-      berkus: berkusAnalysis.total_valuation,
-      scorecard: scorecardAnalysis.weighted_score,
-      market: marketAnalysis.som_analysis.confidence,
-      team: teamAnalysis.founder_market_fit.score,
-      product: productAnalysis.product_market_fit.score,
-      financial: financialAnalysis.revenue_model.clarity
-    })
-    
-    // Calcola range di valutazione
-    const valuationRange = this.calculateValuationRange(berkusAnalysis, scorecardAnalysis, riskFactorAnalysis)
-    
-    // Genera raccomandazioni e next steps
-    const recommendations = this.generateRecommendations(extractedData, overallScore)
-    const missingAreas = this.identifyMissingAreas(extractedData)
-    const nextSteps = this.generateNextSteps(overallScore, investmentReadiness)
-    
-    // Genera Executive Summary dettagliato
-    const executiveSummary = this.generateExecutiveSummary(extractedData, overallScore, valuationRange)
-    
+    try {
+      // Analizza il contenuto per estrarre informazioni chiave
+      const extractedData = this.extractKeyInformation(content)
+      
+      // Esegue tutte le analisi professionali
+      const berkusAnalysis = this.performBerkusAnalysis(extractedData)
+      const scorecardAnalysis = this.performScorecardAnalysis(extractedData)
+      const riskFactorAnalysis = this.performRiskFactorAnalysis(extractedData)
+      const marketAnalysis = this.performMarketAnalysis(extractedData)
+      const competitiveAnalysis = this.performCompetitiveAnalysis(extractedData)
+      const financialAnalysis = this.performFinancialAnalysis(extractedData)
+      const teamAnalysis = this.performTeamAnalysis(extractedData)
+      const productAnalysis = this.performProductAnalysis(extractedData)
+      const investmentReadiness = this.assessInvestmentReadiness(extractedData)
+      
+      // Calcola score complessivo
+      const overallScore = this.calculateOverallScore({
+        berkus: berkusAnalysis.total_valuation,
+        scorecard: scorecardAnalysis.weighted_score,
+        market: marketAnalysis.som_analysis.confidence,
+        team: teamAnalysis.founder_market_fit.score,
+        product: productAnalysis.product_market_fit.score,
+        financial: financialAnalysis.revenue_model.clarity
+      })
+      
+      // Calcola range di valutazione
+      const valuationRange = this.calculateValuationRange(berkusAnalysis, scorecardAnalysis, riskFactorAnalysis)
+      
+      // Genera raccomandazioni e next steps
+      const recommendations = this.generateRecommendations(extractedData, overallScore)
+      const missingAreas = this.identifyMissingAreas(extractedData)
+      const nextSteps = this.generateNextSteps(overallScore, investmentReadiness)
+      
+      // Genera Executive Summary dettagliato
+      const executiveSummary = this.generateExecutiveSummary(extractedData, overallScore, valuationRange)
+      
+      return {
+        overall_score: overallScore,
+        valuation_range: valuationRange,
+        berkus_analysis: berkusAnalysis,
+        scorecard_analysis: scorecardAnalysis,
+        risk_factor_analysis: riskFactorAnalysis,
+        market_analysis: marketAnalysis,
+        competitive_analysis: competitiveAnalysis,
+        financial_analysis: financialAnalysis,
+        team_analysis: teamAnalysis,
+        product_analysis: productAnalysis,
+        investment_readiness: investmentReadiness,
+        recommendations,
+        missing_areas: missingAreas,
+        next_steps: nextSteps,
+        executive_summary: executiveSummary
+      }
+      
+    } catch (error) {
+      console.error('❌ AI Analyzer: Error in document analysis:', error)
+      throw new Error('Errore durante l\'analisi del documento')
+    }
+  }
+  
+  // Converte dati questionario in formato per analisi
+  private convertQuestionnaireToAnalysisData(data: QuestionnaireData): any {
     return {
-      overall_score: overallScore,
-      valuation_range: valuationRange,
-      berkus_analysis: berkusAnalysis,
-      scorecard_analysis: scorecardAnalysis,
-      risk_factor_analysis: riskFactorAnalysis,
-      market_analysis: marketAnalysis,
-      competitive_analysis: competitiveAnalysis,
-      financial_analysis: financialAnalysis,
-      team_analysis: teamAnalysis,
-      product_analysis: productAnalysis,
-      investment_readiness: investmentReadiness,
-      recommendations,
-      missing_areas: missingAreas,
-      next_steps: nextSteps,
-      executive_summary: executiveSummary
+      content: `${data.project_name} - ${data.project_description} - ${data.problem_solution}`,
+      contentLength: (data.project_description + data.problem_solution).length,
+      hasMarketAnalysis: !!(data.target_market && data.market_validation),
+      hasCompetitiveAnalysis: !!(data.competitors && data.competitive_advantage),
+      hasFinancialProjections: !!(data.revenue_projections && data.funding_needs),
+      hasTeamInfo: !!(data.team_size && data.team_experience),
+      hasProductInfo: !!(data.product_stage && data.unique_value),
+      hasBusinessModel: !!data.business_model,
+      hasTechnology: data.product_stage.includes('MVP') || data.product_stage.includes('Prototipo'),
+      hasInvestmentInfo: !!data.funding_needs,
+      wordCount: Object.values(data).join(' ').split(/\s+/).length,
+      sections: Object.keys(data).filter(key => data[key as keyof QuestionnaireData]),
+      // Dati specifici del questionario
+      questionnaire: {
+        teamSize: data.team_size,
+        teamExperience: data.team_experience,
+        teamAdvisors: data.team_advisors,
+        targetMarket: data.target_market,
+        marketSize: data.market_size,
+        marketValidation: data.market_validation,
+        productStage: data.product_stage,
+        uniqueValue: data.unique_value,
+        customerFeedback: data.customer_feedback,
+        competitors: data.competitors,
+        competitiveAdvantage: data.competitive_advantage,
+        businessModel: data.business_model,
+        revenueProjections: data.revenue_projections,
+        fundingNeeds: data.funding_needs,
+        currentRevenue: data.current_revenue
+      }
     }
   }
   
@@ -128,45 +259,63 @@ export class ProfessionalStartupAnalyzer {
   }
   
   private performBerkusAnalysis(data: any): any {
+    // Migliora l'analisi se abbiamo dati del questionario
+    const hasQuestionnaire = !!data.questionnaire
+    
     const baseValue = {
-      score: data.hasProductInfo ? (data.contentLength > 5000 ? 80000 : 50000) : 20000,
+      score: data.hasProductInfo ? 
+        (hasQuestionnaire && data.questionnaire.productStage === 'MVP' ? 90000 : 
+         data.contentLength > 5000 ? 80000 : 50000) : 20000,
       max: 100000,
-      reasoning: data.hasProductInfo ? 
-        'Prodotto ben descritto con dettagli tecnici, necessaria validazione mercato' : 
-        'Informazioni sul prodotto limitate, necessario approfondimento significativo'
+      reasoning: hasQuestionnaire ? 
+        `Stadio prodotto: ${data.questionnaire.productStage}. ${data.questionnaire.productStage === 'MVP' ? 'MVP funzionante con validazione iniziale' : 'Prodotto in fase di sviluppo, necessaria validazione mercato'}` :
+        (data.hasProductInfo ? 'Prodotto ben descritto con dettagli tecnici, necessaria validazione mercato' : 'Informazioni sul prodotto limitate, necessario approfondimento significativo')
     }
     
     const technology = {
-      score: data.hasTechnology ? (data.sections.length > 10 ? 70000 : 45000) : 15000,
+      score: hasQuestionnaire ? 
+        (data.questionnaire.productStage.includes('completo') ? 85000 :
+         data.questionnaire.productStage.includes('MVP') ? 70000 : 45000) :
+        (data.hasTechnology ? (data.sections.length > 10 ? 70000 : 45000) : 15000),
       max: 100000,
-      reasoning: data.hasTechnology ? 
-        'Stack tecnologico identificato, necessaria valutazione scalabilità e IP protection' : 
-        'Aspetti tecnologici poco chiari, servono specifiche tecniche dettagliate'
+      reasoning: hasQuestionnaire ? 
+        `Valore unico: ${data.questionnaire.uniqueValue ? 'Definito chiaramente' : 'Da approfondire'}. Necessaria valutazione scalabilità tecnica` :
+        (data.hasTechnology ? 'Stack tecnologico identificato, necessaria valutazione scalabilità e IP protection' : 'Aspetti tecnologici poco chiari, servono specifiche tecniche dettagliate')
     }
     
     const execution = {
-      score: data.hasTeamInfo ? (data.hasFinancialProjections ? 65000 : 40000) : 25000,
+      score: hasQuestionnaire ? 
+        (data.questionnaire.teamSize === '5+ persone' ? 80000 :
+         data.questionnaire.teamSize === '3-4 persone' ? 65000 : 40000) :
+        (data.hasTeamInfo ? (data.hasFinancialProjections ? 65000 : 40000) : 25000),
       max: 100000,
-      reasoning: data.hasTeamInfo ? 
-        'Team presente con esperienza, capacità esecutiva da validare con track record' : 
-        'Informazioni sul team insufficienti per valutare capacità di esecuzione'
+      reasoning: hasQuestionnaire ? 
+        `Team di ${data.questionnaire.teamSize} con esperienza: ${data.questionnaire.teamExperience ? 'Documentata' : 'Da validare'}` :
+        (data.hasTeamInfo ? 'Team presente con esperienza, capacità esecutiva da validare con track record' : 'Informazioni sul team insufficienti per valutare capacità di esecuzione')
     }
     
     const marketRelationships = {
-      score: data.hasMarketAnalysis ? (data.hasCompetitiveAnalysis ? 60000 : 35000) : 20000,
+      score: hasQuestionnaire ? 
+        (data.questionnaire.marketValidation && data.questionnaire.targetMarket ? 75000 : 35000) :
+        (data.hasMarketAnalysis ? (data.hasCompetitiveAnalysis ? 60000 : 35000) : 20000),
       max: 100000,
-      reasoning: data.hasMarketAnalysis ? 
-        'Comprensione del mercato dimostrata, partnership strategiche da sviluppare' : 
-        'Analisi di mercato carente, relazioni strategiche e canali non evidenti'
+      reasoning: hasQuestionnaire ? 
+        `Validazione mercato: ${data.questionnaire.marketValidation ? 'Effettuata' : 'Mancante'}. Target: ${data.questionnaire.targetMarket ? 'Definito' : 'Da specificare'}` :
+        (data.hasMarketAnalysis ? 'Comprensione del mercato dimostrata, partnership strategiche da sviluppare' : 'Analisi di mercato carente, relazioni strategiche e canali non evidenti')
     }
     
     const productionSales = {
-      score: data.hasInvestmentInfo ? (data.hasBusinessModel ? 55000 : 30000) : 15000,
+      score: hasQuestionnaire ? 
+        (data.questionnaire.businessModel && data.questionnaire.revenueProjections ? 70000 : 
+         data.questionnaire.businessModel ? 50000 : 30000) :
+        (data.hasInvestmentInfo ? (data.hasBusinessModel ? 55000 : 30000) : 15000),
       max: 100000,
-      reasoning: data.hasBusinessModel ? 
-        'Modello di business delineato, metriche di vendita e produzione da implementare' : 
-        'Strategia di produzione e vendita non sufficientemente dettagliata'
+      reasoning: hasQuestionnaire ? 
+        `Business Model: ${data.questionnaire.businessModel}. Proiezioni: ${data.questionnaire.revenueProjections ? 'Presenti' : 'Mancanti'}` :
+        (data.hasBusinessModel ? 'Modello di business delineato, metriche di vendita e produzione da implementare' : 'Strategia di produzione e vendita non sufficientemente dettagliata')
     }
+    
+    const totalValuation = baseValue.score + technology.score + execution.score + marketRelationships.score + productionSales.score
     
     return {
       base_value: baseValue,
@@ -174,66 +323,85 @@ export class ProfessionalStartupAnalyzer {
       execution,
       market_relationships: marketRelationships,
       production_sales: productionSales,
-      total_valuation: baseValue.score + technology.score + execution.score + marketRelationships.score + productionSales.score,
-      summary: `Valutazione Berkus: ${Math.round((baseValue.score + technology.score + execution.score + marketRelationships.score + productionSales.score) / 1000)}K EUR`
+      total_valuation: totalValuation,
+      summary: `Valutazione Berkus: ${Math.round(totalValuation / 1000)}K EUR`
     }
   }
   
   private performScorecardAnalysis(data: any): any {
+    const hasQuestionnaire = !!data.questionnaire
+    
     const managementStrength = {
-      score: data.hasTeamInfo ? (data.wordCount > 3000 ? 85 : 65) : 40,
+      score: hasQuestionnaire ? 
+        (data.questionnaire.teamSize === '5+ persone' ? 90 :
+         data.questionnaire.teamSize === '3-4 persone' ? 75 :
+         data.questionnaire.teamSize === '2 persone' ? 60 : 40) :
+        (data.hasTeamInfo ? (data.wordCount > 3000 ? 85 : 65) : 40),
       weight: 30,
-      reasoning: data.hasTeamInfo ? 
-        'Management identificato, necessaria valutazione track record e competenze settoriali' : 
-        'Informazioni sul management insufficienti per valutazione approfondita'
+      reasoning: hasQuestionnaire ? 
+        `Team ${data.questionnaire.teamSize}. Esperienza: ${data.questionnaire.teamExperience ? 'Documentata' : 'Da validare'}. Advisor: ${data.questionnaire.teamAdvisors ? 'Presenti' : 'Mancanti'}` :
+        (data.hasTeamInfo ? 'Management identificato, necessaria valutazione track record e competenze settoriali' : 'Informazioni sul management insufficienti per valutazione approfondita')
     }
     
     const marketSize = {
-      score: data.hasMarketAnalysis ? (data.sections.length > 8 ? 80 : 60) : 35,
+      score: hasQuestionnaire ? 
+        (data.questionnaire.marketSize ? 85 :
+         data.questionnaire.targetMarket && data.questionnaire.marketValidation ? 70 : 45) :
+        (data.hasMarketAnalysis ? (data.sections.length > 8 ? 80 : 60) : 35),
       weight: 25,
-      reasoning: data.hasMarketAnalysis ? 
-        'Dimensioni di mercato accennate, necessaria quantificazione TAM/SAM/SOM con fonti' : 
-        'Analisi dimensioni mercato completamente mancante'
+      reasoning: hasQuestionnaire ? 
+        `Target Market: ${data.questionnaire.targetMarket ? 'Definito' : 'Generico'}. Dimensioni: ${data.questionnaire.marketSize ? 'Quantificate' : 'Stimate'}. Validazione: ${data.questionnaire.marketValidation ? 'Effettuata' : 'Mancante'}` :
+        (data.hasMarketAnalysis ? 'Dimensioni di mercato accennate, necessaria quantificazione TAM/SAM/SOM con fonti' : 'Analisi dimensioni mercato completamente mancante')
     }
     
     const productTechnology = {
-      score: data.hasProductInfo ? (data.hasTechnology ? 75 : 55) : 30,
+      score: hasQuestionnaire ? 
+        (data.questionnaire.productStage === 'Prodotto completo' ? 90 :
+         data.questionnaire.productStage === 'MVP' ? 80 :
+         data.questionnaire.productStage === 'Prototipo' ? 65 : 45) :
+        (data.hasProductInfo ? (data.hasTechnology ? 75 : 55) : 30),
       weight: 15,
-      reasoning: data.hasProductInfo ? 
-        'Prodotto/tecnologia descritti, necessaria valutazione differenziazione competitiva' : 
-        'Specifiche prodotto/tecnologia insufficienti per valutazione'
+      reasoning: hasQuestionnaire ? 
+        `Stadio: ${data.questionnaire.productStage}. Valore unico: ${data.questionnaire.uniqueValue ? 'Chiaramente definito' : 'Da approfondire'}. Feedback: ${data.questionnaire.customerFeedback ? 'Raccolto' : 'Mancante'}` :
+        (data.hasProductInfo ? 'Prodotto/tecnologia descritti, necessaria valutazione differenziazione competitiva' : 'Specifiche prodotto/tecnologia insufficienti per valutazione')
     }
     
     const partnershipsMarketing = {
-      score: data.hasBusinessModel ? 70 : 45,
+      score: hasQuestionnaire ? 
+        (data.questionnaire.businessModel && data.questionnaire.targetMarket ? 80 : 55) :
+        (data.hasBusinessModel ? 70 : 45),
       weight: 10,
-      reasoning: data.hasBusinessModel ? 
-        'Strategia commerciale accennata, partnership strategiche da definire' : 
-        'Canali di marketing, vendita e partnership strategiche non chiari'
+      reasoning: hasQuestionnaire ? 
+        `Business Model: ${data.questionnaire.businessModel}. Go-to-market strategy basata su target definito: ${data.questionnaire.targetMarket ? 'Sì' : 'No'}` :
+        (data.hasBusinessModel ? 'Strategia commerciale accennata, partnership strategiche da definire' : 'Canali di marketing, vendita e partnership strategiche non chiari')
     }
     
     const competitiveEnvironment = {
-      score: data.hasCompetitiveAnalysis ? 75 : 40,
+      score: hasQuestionnaire ? 
+        (data.questionnaire.competitors && data.questionnaire.competitiveAdvantage ? 85 : 50) :
+        (data.hasCompetitiveAnalysis ? 75 : 40),
       weight: 10,
-      reasoning: data.hasCompetitiveAnalysis ? 
-        'Ambiente competitivo analizzato, vantaggio competitivo sostenibile da consolidare' : 
-        'Analisi competitiva carente, positioning non chiaro'
+      reasoning: hasQuestionnaire ? 
+        `Competitor identificati: ${data.questionnaire.competitors ? 'Sì' : 'No'}. Vantaggio competitivo: ${data.questionnaire.competitiveAdvantage ? 'Definito chiaramente' : 'Generico'}` :
+        (data.hasCompetitiveAnalysis ? 'Ambiente competitivo analizzato, vantaggio competitivo sostenibile da consolidare' : 'Analisi competitiva carente, positioning non chiaro')
     }
     
     const additionalInvestmentNeeds = {
-      score: data.hasInvestmentInfo ? 80 : 50,
+      score: hasQuestionnaire ? 
+        (data.questionnaire.fundingNeeds && data.questionnaire.revenueProjections ? 90 : 65) :
+        (data.hasInvestmentInfo ? 80 : 50),
       weight: 5,
-      reasoning: data.hasInvestmentInfo ? 
-        'Fabbisogni finanziari indicati, necessario business plan dettagliato con milestone' : 
-        'Necessità di investimento aggiuntivo non quantificate'
+      reasoning: hasQuestionnaire ? 
+        `Fabbisogni definiti: ${data.questionnaire.fundingNeeds}. Proiezioni: ${data.questionnaire.revenueProjections ? 'Dettagliate' : 'Generiche'}. Ricavi attuali: ${data.questionnaire.currentRevenue || 'Pre-revenue'}` :
+        (data.hasInvestmentInfo ? 'Fabbisogni finanziari indicati, necessario business plan dettagliato con milestone' : 'Necessità di investimento aggiuntivo non quantificate')
     }
     
     const others = {
-      score: data.contentLength > 8000 ? 70 : 50,
+      score: hasQuestionnaire ? 75 : (data.contentLength > 8000 ? 70 : 50),
       weight: 5,
-      reasoning: data.contentLength > 8000 ? 
-        'Documentazione completa, alcuni aspetti regolatori e legali da approfondire' : 
-        'Documentazione incompleta, necessari approfondimenti in multiple aree'
+      reasoning: hasQuestionnaire ? 
+        'Questionario completo fornisce base solida, necessari approfondimenti legali e regolatori' :
+        (data.contentLength > 8000 ? 'Documentazione completa, alcuni aspetti regolatori e legali da approfondire' : 'Documentazione incompleta, necessari approfondimenti in multiple aree')
     }
     
     const weightedScore = Math.round(
@@ -255,49 +423,77 @@ export class ProfessionalStartupAnalyzer {
       additional_investment_needs: additionalInvestmentNeeds,
       others,
       weighted_score: weightedScore,
-      summary: `Score Scorecard: ${weightedScore}/100 - ${weightedScore > 70 ? 'Eccellente' : weightedScore > 50 ? 'Buono' : 'Da migliorare'}`
+      summary: `Score Scorecard: ${weightedScore}/100 - ${weightedScore > 80 ? 'Eccellente' : weightedScore > 65 ? 'Molto Buono' : weightedScore > 50 ? 'Buono' : 'Da migliorare'}`
     }
   }
   
   private performRiskFactorAnalysis(data: any): any {
+    const hasQuestionnaire = !!data.questionnaire
+    
     const managementRisk = {
-      level: data.hasTeamInfo ? (data.wordCount > 5000 ? 'low' : 'medium') : 'high',
-      impact: data.hasTeamInfo ? (data.wordCount > 5000 ? 5 : -10) : -25,
-      description: data.hasTeamInfo ? 
-        'Team descritto ma necessaria valutazione competenze specifiche e track record' : 
-        'Informazioni sul team insufficienti, alto rischio esecutivo per il progetto'
+      level: hasQuestionnaire ? 
+        (data.questionnaire.teamSize === '5+ persone' && data.questionnaire.teamExperience ? 'low' :
+         data.questionnaire.teamSize !== 'Solo io' ? 'medium' : 'high') :
+        (data.hasTeamInfo ? (data.wordCount > 5000 ? 'low' : 'medium') : 'high'),
+      impact: hasQuestionnaire ? 
+        (data.questionnaire.teamSize === '5+ persone' ? 10 :
+         data.questionnaire.teamSize !== 'Solo io' ? 0 : -20) :
+        (data.hasTeamInfo ? (data.wordCount > 5000 ? 5 : -10) : -25),
+      description: hasQuestionnaire ? 
+        `Team ${data.questionnaire.teamSize} con esperienza ${data.questionnaire.teamExperience ? 'documentata' : 'da validare'}. Advisor: ${data.questionnaire.teamAdvisors ? 'presenti' : 'assenti'}` :
+        (data.hasTeamInfo ? 'Team descritto ma necessaria valutazione competenze specifiche e track record' : 'Informazioni sul team insufficienti, alto rischio esecutivo per il progetto')
     }
     
     const marketRisk = {
-      level: data.hasMarketAnalysis ? (data.hasCompetitiveAnalysis ? 'low' : 'medium') : 'high',
-      impact: data.hasMarketAnalysis ? (data.hasCompetitiveAnalysis ? 10 : -5) : -20,
-      description: data.hasMarketAnalysis ? 
-        'Mercato analizzato, necessaria validazione domanda e customer acquisition' : 
-        'Analisi di mercato carente, alto rischio di product-market fit'
+      level: hasQuestionnaire ? 
+        (data.questionnaire.marketValidation && data.questionnaire.targetMarket ? 'low' : 'medium') :
+        (data.hasMarketAnalysis ? (data.hasCompetitiveAnalysis ? 'low' : 'medium') : 'high'),
+      impact: hasQuestionnaire ? 
+        (data.questionnaire.marketValidation ? 15 : -10) :
+        (data.hasMarketAnalysis ? (data.hasCompetitiveAnalysis ? 10 : -5) : -20),
+      description: hasQuestionnaire ? 
+        `Validazione mercato: ${data.questionnaire.marketValidation ? 'effettuata' : 'mancante'}. Target: ${data.questionnaire.targetMarket ? 'definito' : 'generico'}` :
+        (data.hasMarketAnalysis ? 'Mercato analizzato, necessaria validazione domanda e customer acquisition' : 'Analisi di mercato carente, alto rischio di product-market fit')
     }
     
     const technologyRisk = {
-      level: data.hasTechnology ? (data.hasProductInfo ? 'low' : 'medium') : 'high',
-      impact: data.hasTechnology ? (data.hasProductInfo ? 5 : -10) : -15,
-      description: data.hasTechnology ? 
-        'Tecnologia descritta, necessaria valutazione scalabilità e implementazione' : 
-        'Aspetti tecnologici poco chiari, rischio significativo di implementazione'
+      level: hasQuestionnaire ? 
+        (data.questionnaire.productStage === 'Prodotto completo' ? 'low' :
+         data.questionnaire.productStage === 'MVP' ? 'medium' : 'high') :
+        (data.hasTechnology ? (data.hasProductInfo ? 'low' : 'medium') : 'high'),
+      impact: hasQuestionnaire ? 
+        (data.questionnaire.productStage === 'Prodotto completo' ? 10 :
+         data.questionnaire.productStage === 'MVP' ? 0 : -15) :
+        (data.hasTechnology ? (data.hasProductInfo ? 5 : -10) : -15),
+      description: hasQuestionnaire ? 
+        `Stadio prodotto: ${data.questionnaire.productStage}. Feedback clienti: ${data.questionnaire.customerFeedback ? 'raccolto' : 'mancante'}` :
+        (data.hasTechnology ? 'Tecnologia descritta, necessaria valutazione scalabilità e implementazione' : 'Aspetti tecnologici poco chiari, rischio significativo di implementazione')
     }
     
     const competitiveRisk = {
-      level: data.hasCompetitiveAnalysis ? 'medium' : 'high',
-      impact: data.hasCompetitiveAnalysis ? -5 : -15,
-      description: data.hasCompetitiveAnalysis ? 
-        'Concorrenza analizzata, necessario monitoraggio continuo e differenziazione' : 
-        'Analisi competitiva insufficiente, rischio di essere superati da competitor'
+      level: hasQuestionnaire ? 
+        (data.questionnaire.competitors && data.questionnaire.competitiveAdvantage ? 'medium' : 'high') :
+        (data.hasCompetitiveAnalysis ? 'medium' : 'high'),
+      impact: hasQuestionnaire ? 
+        (data.questionnaire.competitiveAdvantage ? 5 : -15) :
+        (data.hasCompetitiveAnalysis ? -5 : -15),
+      description: hasQuestionnaire ? 
+        `Competitor: ${data.questionnaire.competitors ? 'identificati' : 'non analizzati'}. Vantaggio: ${data.questionnaire.competitiveAdvantage ? 'definito' : 'generico'}` :
+        (data.hasCompetitiveAnalysis ? 'Concorrenza analizzata, necessario monitoraggio continuo e differenziazione' : 'Analisi competitiva insufficiente, rischio di essere superati da competitor')
     }
     
     const financialRisk = {
-      level: data.hasFinancialProjections ? (data.hasBusinessModel ? 'medium' : 'high') : 'high',
-      impact: data.hasFinancialProjections ? (data.hasBusinessModel ? -5 : -15) : -20,
-      description: data.hasFinancialProjections ? 
-        'Proiezioni finanziarie presenti, necessaria validazione modello e assumzioni' : 
-        'Piano finanziario carente, rischio significativo di sostenibilità economica'
+      level: hasQuestionnaire ? 
+        (data.questionnaire.revenueProjections && data.questionnaire.currentRevenue ? 'low' :
+         data.questionnaire.businessModel ? 'medium' : 'high') :
+        (data.hasFinancialProjections ? (data.hasBusinessModel ? 'medium' : 'high') : 'high'),
+      impact: hasQuestionnaire ? 
+        (data.questionnaire.revenueProjections ? 5 :
+         data.questionnaire.businessModel ? -5 : -20) :
+        (data.hasFinancialProjections ? (data.hasBusinessModel ? -5 : -15) : -20),
+      description: hasQuestionnaire ? 
+        `Business model: ${data.questionnaire.businessModel}. Proiezioni: ${data.questionnaire.revenueProjections ? 'presenti' : 'mancanti'}. Ricavi: ${data.questionnaire.currentRevenue || 'pre-revenue'}` :
+        (data.hasFinancialProjections ? 'Proiezioni finanziarie presenti, necessaria validazione modello e assumzioni' : 'Piano finanziario carente, rischio significativo di sostenibilità economica')
     }
     
     const regulatoryRisk = {
@@ -316,33 +512,40 @@ export class ProfessionalStartupAnalyzer {
       financial_risk: financialRisk,
       regulatory_risk: regulatoryRisk,
       total_risk_adjustment: totalRiskAdjustment,
-      summary: `Aggiustamento rischio: ${totalRiskAdjustment > 0 ? '+' : ''}${totalRiskAdjustment}% - ${totalRiskAdjustment > 0 ? 'Profilo favorevole' : 'Rischi da mitigare'}`
+      summary: `Aggiustamento rischio: ${totalRiskAdjustment > 0 ? '+' : ''}${totalRiskAdjustment}% - ${totalRiskAdjustment > 10 ? 'Profilo molto favorevole' : totalRiskAdjustment > 0 ? 'Profilo favorevole' : 'Rischi da mitigare'}`
     }
   }
   
   private performMarketAnalysis(data: any): any {
+    const hasQuestionnaire = !!data.questionnaire
+    
     const tamAnalysis = {
-      size: data.hasMarketAnalysis ? (data.wordCount > 4000 ? 1000000000 : 500000000) : 100000000,
-      confidence: data.hasMarketAnalysis ? (data.sections.length > 10 ? 70 : 50) : 30,
-      reasoning: data.hasMarketAnalysis ? 
-        'Mercato totale identificato, necessaria quantificazione precisa con fonti autorevoli' : 
-        'Dimensioni del mercato totale da definire con ricerca di mercato strutturata'
+      size: hasQuestionnaire && data.questionnaire.marketSize ? 
+        this.parseMarketSize(data.questionnaire.marketSize) :
+        (data.hasMarketAnalysis ? (data.wordCount > 4000 ? 1000000000 : 500000000) : 100000000),
+      confidence: hasQuestionnaire ? 
+        (data.questionnaire.marketSize ? 85 : 
+         data.questionnaire.targetMarket ? 65 : 45) :
+        (data.hasMarketAnalysis ? (data.sections.length > 10 ? 70 : 50) : 30),
+      reasoning: hasQuestionnaire ? 
+        `Target market: ${data.questionnaire.targetMarket || 'Non specificato'}. Dimensioni quantificate: ${data.questionnaire.marketSize ? 'Sì' : 'No'}` :
+        (data.hasMarketAnalysis ? 'Mercato totale identificato, necessaria quantificazione precisa con fonti autorevoli' : 'Dimensioni del mercato totale da definire con ricerca di mercato strutturata')
     }
     
     const samAnalysis = {
       size: Math.round(tamAnalysis.size * 0.1),
       confidence: tamAnalysis.confidence - 10,
-      reasoning: data.hasMarketAnalysis ? 
-        'Mercato servibile stimato, necessaria segmentazione dettagliata per target' : 
-        'Mercato servibile da definire in base a geografia, segmenti e capacità'
+      reasoning: hasQuestionnaire ? 
+        `Mercato servibile stimato in base a target: ${data.questionnaire.targetMarket}` :
+        (data.hasMarketAnalysis ? 'Mercato servibile stimato, necessaria segmentazione dettagliata per target' : 'Mercato servibile da definire in base a geografia, segmenti e capacità')
     }
     
     const somAnalysis = {
       size: Math.round(samAnalysis.size * 0.05),
       confidence: samAnalysis.confidence - 10,
-      reasoning: data.hasMarketAnalysis ? 
-        'Mercato ottenibile stimato, necessaria validazione con strategia go-to-market' : 
-        'Mercato ottenibile da calcolare in base a capacità operative e strategia'
+      reasoning: hasQuestionnaire ? 
+        `Mercato ottenibile basato su capacità team (${data.questionnaire.teamSize}) e stadio prodotto (${data.questionnaire.productStage})` :
+        (data.hasMarketAnalysis ? 'Mercato ottenibile stimato, necessaria validazione con strategia go-to-market' : 'Mercato ottenibile da calcolare in base a capacità operative e strategia')
     }
     
     return {
@@ -350,176 +553,505 @@ export class ProfessionalStartupAnalyzer {
       sam_analysis: samAnalysis,
       som_analysis: somAnalysis,
       market_growth: {
-        rate: data.hasMarketAnalysis ? 15 : 10,
-        sustainability: data.hasMarketAnalysis ? 70 : 50,
-        reasoning: 'Crescita di mercato da validare con dati di settore e trend analysis'
+        rate: hasQuestionnaire ? 
+          (data.questionnaire.marketValidation ? 18 : 12) :
+          (data.hasMarketAnalysis ? 15 : 10),
+        sustainability: hasQuestionnaire ? 
+          (data.questionnaire.targetMarket && data.questionnaire.marketValidation ? 80 : 60) :
+          (data.hasMarketAnalysis ? 70 : 50),
+        reasoning: hasQuestionnaire ? 
+          `Crescita stimata in base a validazione mercato effettuata: ${data.questionnaire.marketValidation ? 'Sì' : 'No'}` :
+          'Crescita di mercato da validare con dati di settore e trend analysis'
       },
       market_maturity: {
-        stage: data.hasMarketAnalysis ? 'Growing' : 'Undefined',
-        score: data.hasMarketAnalysis ? 65 : 40,
-        reasoning: 'Maturità del mercato da analizzare con lifecycle analysis dettagliata'
+        stage: hasQuestionnaire ? 
+          (data.questionnaire.competitors ? 'Growing' : 'Emerging') :
+          (data.hasMarketAnalysis ? 'Growing' : 'Undefined'),
+        score: hasQuestionnaire ? 
+          (data.questionnaire.competitors && data.questionnaire.marketValidation ? 75 : 55) :
+          (data.hasMarketAnalysis ? 65 : 40),
+        reasoning: hasQuestionnaire ? 
+          `Maturità basata su presenza competitor (${data.questionnaire.competitors ? 'identificati' : 'non analizzati'}) e validazione market` :
+          'Maturità del mercato da analizzare con lifecycle analysis dettagliata'
       },
       customer_validation: {
-        score: data.hasMarketAnalysis ? 55 : 30,
-        evidence: data.hasMarketAnalysis ? ['Ricerca di mercato menzionata'] : ['Validazione cliente mancante']
+        score: hasQuestionnaire ? 
+          (data.questionnaire.marketValidation && data.questionnaire.customerFeedback ? 85 :
+           data.questionnaire.marketValidation ? 70 : 35) :
+          (data.hasMarketAnalysis ? 55 : 30),
+        evidence: hasQuestionnaire ? 
+          [data.questionnaire.marketValidation || 'Validazione non effettuata',
+           data.questionnaire.customerFeedback || 'Feedback clienti non raccolto'].filter(Boolean) :
+          (data.hasMarketAnalysis ? ['Ricerca di mercato menzionata'] : ['Validazione cliente mancante'])
       },
       summary: `TAM: ${Math.round(tamAnalysis.size / 1000000)}M EUR - SAM: ${Math.round(samAnalysis.size / 1000000)}M EUR - SOM: ${Math.round(somAnalysis.size / 1000000)}M EUR`
     }
   }
   
+  private parseMarketSize(marketSizeText: string): number {
+    // Prova a estrarre numeri dal testo delle dimensioni di mercato
+    const numbers = marketSizeText.match(/(\d+(?:[\.,]\d+)?)\s*([kmbt]?)/gi)
+    if (numbers && numbers.length > 0) {
+      const match = numbers[0].match(/(\d+(?:[\.,]\d+)?)\s*([kmbt]?)/i)
+      if (match) {
+        let value = parseFloat(match[1].replace(',', '.'))
+        const multiplier = match[2]?.toLowerCase()
+        
+        switch (multiplier) {
+          case 'k': value *= 1000; break
+          case 'm': value *= 1000000; break
+          case 'b': value *= 1000000000; break
+          case 't': value *= 1000000000000; break
+        }
+        
+        return value
+      }
+    }
+    // Default se non riesco a parsare
+    return 500000000
+  }
+  
   private performCompetitiveAnalysis(data: any): any {
+    const hasQuestionnaire = !!data.questionnaire
+    
     return {
       competitive_position: {
-        score: data.hasCompetitiveAnalysis ? 65 : 35,
-        reasoning: data.hasCompetitiveAnalysis ? 
-          'Posizionamento competitivo identificato, necessaria mappatura dettagliata dei competitor' : 
-          'Posizionamento competitivo da definire con analisi strutturata del mercato'
+        score: hasQuestionnaire ? 
+          (data.questionnaire.competitors && data.questionnaire.competitiveAdvantage ? 80 : 45) :
+          (data.hasCompetitiveAnalysis ? 65 : 35),
+        reasoning: hasQuestionnaire ? 
+          `Competitor identificati: ${data.questionnaire.competitors || 'Non specificati'}. Vantaggio competitivo: ${data.questionnaire.competitiveAdvantage || 'Da definire'}` :
+          (data.hasCompetitiveAnalysis ? 'Posizionamento competitivo identificato, necessaria mappatura dettagliata dei competitor' : 'Posizionamento competitivo da definire con analisi strutturata del mercato')
       },
       differentiation: {
-        score: data.hasProductInfo ? (data.hasTechnology ? 70 : 50) : 35,
-        unique_factors: data.hasProductInfo ? ['Caratteristiche prodotto innovative identificate'] : ['Fattori differenzianti da identificare e sviluppare']
+        score: hasQuestionnaire ? 
+          (data.questionnaire.uniqueValue && data.questionnaire.competitiveAdvantage ? 85 : 
+           data.questionnaire.uniqueValue ? 65 : 40) :
+          (data.hasProductInfo ? (data.hasTechnology ? 70 : 50) : 35),
+        unique_factors: hasQuestionnaire ? 
+          [data.questionnaire.uniqueValue || 'Valore unico da definire chiaramente'] :
+          (data.hasProductInfo ? ['Caratteristiche prodotto innovative identificate'] : ['Fattori differenzianti da identificare e sviluppare'])
       },
       barriers_to_entry: {
-        score: data.hasTechnology ? 60 : 40,
-        barriers: data.hasTechnology ? ['Barriere tecnologiche potenziali'] : ['Barriere all\'ingresso da sviluppare strategicamente']
+        score: hasQuestionnaire ? 
+          (data.questionnaire.productStage === 'Prodotto completo' ? 75 :
+           data.questionnaire.productStage === 'MVP' ? 60 : 45) :
+          (data.hasTechnology ? 60 : 40),
+        barriers: hasQuestionnaire ? 
+          [`Stadio sviluppo: ${data.questionnaire.productStage}`, 'Know-how specifico del team'] :
+          (data.hasTechnology ? ['Barriere tecnologiche potenziali'] : ['Barriere all\'ingresso da sviluppare strategicamente'])
       },
       competitive_advantages: {
-        sustainable: data.hasCompetitiveAnalysis && data.hasTechnology,
-        advantages: data.hasCompetitiveAnalysis ? ['Vantaggio competitivo identificato'] : ['Vantaggi competitivi da consolidare e proteggere']
+        sustainable: hasQuestionnaire ? 
+          !!(data.questionnaire.competitiveAdvantage && data.questionnaire.uniqueValue) :
+          (data.hasCompetitiveAnalysis && data.hasTechnology),
+        advantages: hasQuestionnaire ? 
+          [data.questionnaire.competitiveAdvantage || 'Vantaggio competitivo da consolidare'] :
+          (data.hasCompetitiveAnalysis ? ['Vantaggio competitivo identificato'] : ['Vantaggi competitivi da consolidare e proteggere'])
       },
       threat_level: {
-        score: data.hasCompetitiveAnalysis ? 60 : 40,
+        score: hasQuestionnaire ? 
+          (data.questionnaire.competitors && data.questionnaire.competitiveAdvantage ? 70 : 45) :
+          (data.hasCompetitiveAnalysis ? 60 : 40),
         threats: ['Nuovi entranti nel mercato', 'Tecnologie disruptive', 'Cambiamenti regolatori', 'Competitor consolidati']
       },
-      summary: `Posizione competitiva: ${data.hasCompetitiveAnalysis ? 'Identificata' : 'Da definire'} - Differenziazione: ${data.hasProductInfo ? 'Presente' : 'Mancante'}`
+      summary: hasQuestionnaire ? 
+        `Positioning: ${data.questionnaire.competitiveAdvantage ? 'Definito' : 'Da sviluppare'} - Differenziazione: ${data.questionnaire.uniqueValue ? 'Chiara' : 'Da rafforzare'}` :
+        `Posizione competitiva: ${data.hasCompetitiveAnalysis ? 'Identificata' : 'Da definire'} - Differenziazione: ${data.hasProductInfo ? 'Presente' : 'Mancante'}`
     }
   }
   
   private performFinancialAnalysis(data: any): any {
+    const hasQuestionnaire = !!data.questionnaire
+    
     return {
       revenue_model: {
-        clarity: data.hasBusinessModel ? (data.hasFinancialProjections ? 75 : 55) : 35,
-        scalability: data.hasBusinessModel ? 65 : 40,
-        reasoning: data.hasBusinessModel ? 
-          'Modello di ricavi identificato, necessaria quantificazione unit economics dettagliata' : 
-          'Modello di ricavi da definire con chiarezza e sostenibilità economica'
+        clarity: hasQuestionnaire ? 
+          (data.questionnaire.businessModel && data.questionnaire.revenueProjections ? 85 :
+           data.questionnaire.businessModel ? 70 : 40) :
+          (data.hasBusinessModel ? (data.hasFinancialProjections ? 75 : 55) : 35),
+        scalability: hasQuestionnaire ? 
+          this.assessBusinessModelScalability(data.questionnaire.businessModel) :
+          (data.hasBusinessModel ? 65 : 40),
+        reasoning: hasQuestionnaire ? 
+          `Modello: ${data.questionnaire.businessModel}. Proiezioni: ${data.questionnaire.revenueProjections ? 'Dettagliate' : 'Mancanti'}. Ricavi attuali: ${data.questionnaire.currentRevenue || 'Pre-revenue'}` :
+          (data.hasBusinessModel ? 'Modello di ricavi identificato, necessaria quantificazione unit economics dettagliata' : 'Modello di ricavi da definire con chiarezza e sostenibilità economica')
       },
       unit_economics: {
-        ltv_cac_ratio: data.hasFinancialProjections ? 3.5 : 2.0,
-        payback_period: data.hasFinancialProjections ? 12 : 18,
-        reasoning: data.hasFinancialProjections ? 
-          'Metriche economiche stimate, necessaria validazione con dati reali' : 
-          'Unit economics da calcolare con precisione per sostenibilità'
+        ltv_cac_ratio: hasQuestionnaire ? 
+          (data.questionnaire.currentRevenue ? 4.2 :
+           data.questionnaire.revenueProjections ? 3.8 : 2.5) :
+          (data.hasFinancialProjections ? 3.5 : 2.0),
+        payback_period: hasQuestionnaire ? 
+          (data.questionnaire.businessModel?.includes('Abbonamento') ? 8 : 
+           data.questionnaire.currentRevenue ? 10 : 15) :
+          (data.hasFinancialProjections ? 12 : 18),
+        reasoning: hasQuestionnaire ? 
+          `Unit economics stimate basate su modello ${data.questionnaire.businessModel} e ricavi ${data.questionnaire.currentRevenue || 'futuri'}` :
+          (data.hasFinancialProjections ? 'Metriche economiche stimate, necessaria validazione con dati reali' : 'Unit economics da calcolare con precisione per sostenibilità')
       },
       financial_projections: {
-        realism: data.hasFinancialProjections ? 65 : 30,
-        growth_rate: data.hasFinancialProjections ? 150 : 100,
-        reasoning: data.hasFinancialProjections ? 
-          'Proiezioni finanziarie presenti, necessaria validazione ipotesi e scenari' : 
-          'Proiezioni finanziarie da sviluppare con modello dettagliato e realistico'
+        realism: hasQuestionnaire ? 
+          (data.questionnaire.revenueProjections && data.questionnaire.currentRevenue ? 85 :
+           data.questionnaire.revenueProjections ? 70 : 45) :
+          (data.hasFinancialProjections ? 65 : 30),
+        growth_rate: hasQuestionnaire ? 
+          (data.questionnaire.currentRevenue ? 120 :
+           data.questionnaire.productStage === 'MVP' ? 180 : 200) :
+          (data.hasFinancialProjections ? 150 : 100),
+        reasoning: hasQuestionnaire ? 
+          `Proiezioni basate su stadio ${data.questionnaire.productStage} e ricavi ${data.questionnaire.currentRevenue || 'pianificati'}` :
+          (data.hasFinancialProjections ? 'Proiezioni finanziarie presenti, necessaria validazione ipotesi e scenari' : 'Proiezioni finanziarie da sviluppare con modello dettagliato e realistico')
       },
       funding_requirements: {
-        amount: data.hasInvestmentInfo ? 500000 : 300000,
-        runway: data.hasInvestmentInfo ? 18 : 12,
-        milestones: data.hasInvestmentInfo ? ['Milestone identificate nel piano'] : ['Milestone da definire per round']
+        amount: hasQuestionnaire ? 
+          this.parseFundingAmount(data.questionnaire.fundingNeeds) :
+          (data.hasInvestmentInfo ? 500000 : 300000),
+        runway: hasQuestionnaire ? 
+          (data.questionnaire.teamSize === '5+ persone' ? 15 :
+           data.questionnaire.teamSize === '3-4 persone' ? 18 : 24) :
+          (data.hasInvestmentInfo ? 18 : 12),
+        milestones: hasQuestionnaire ? 
+          this.generateMilestones(data.questionnaire) :
+          (data.hasInvestmentInfo ? ['Milestone identificate nel piano'] : ['Milestone da definire per round'])
       },
       path_to_profitability: {
-        timeline: data.hasFinancialProjections ? 24 : 36,
-        probability: data.hasFinancialProjections ? 65 : 45,
-        reasoning: data.hasFinancialProjections ? 
-          'Percorso verso profittabilità delineato con assumzioni' : 
-          'Percorso verso profittabilità da pianificare dettagliatamente'
+        timeline: hasQuestionnaire ? 
+          (data.questionnaire.currentRevenue ? 18 :
+           data.questionnaire.productStage === 'MVP' ? 24 : 30) :
+          (data.hasFinancialProjections ? 24 : 36),
+        probability: hasQuestionnaire ? 
+          (data.questionnaire.revenueProjections && data.questionnaire.businessModel ? 75 :
+           data.questionnaire.businessModel ? 60 : 45) :
+          (data.hasFinancialProjections ? 65 : 45),
+        reasoning: hasQuestionnaire ? 
+          `Timeline basata su stadio ${data.questionnaire.productStage} e modello ${data.questionnaire.businessModel}` :
+          (data.hasFinancialProjections ? 'Percorso verso profittabilità delineato con assumzioni' : 'Percorso verso profittabilità da pianificare dettagliatamente')
       },
-      summary: `Modello ricavi: ${data.hasBusinessModel ? 'Definito' : 'Da sviluppare'} - Proiezioni: ${data.hasFinancialProjections ? 'Presenti' : 'Mancanti'}`
+      summary: hasQuestionnaire ? 
+        `Modello: ${data.questionnaire.businessModel} - Funding: ${data.questionnaire.fundingNeeds} - Ricavi: ${data.questionnaire.currentRevenue || 'Pre-revenue'}` :
+        `Modello ricavi: ${data.hasBusinessModel ? 'Definito' : 'Da sviluppare'} - Proiezioni: ${data.hasFinancialProjections ? 'Presenti' : 'Mancanti'}`
     }
   }
   
+  private assessBusinessModelScalability(businessModel: string): number {
+    if (!businessModel) return 40
+    
+    const scalableModels = ['Abbonamento mensile', 'Licenza annuale', 'Freemium']
+    const moderateModels = ['Commissione per transazione']
+    const limitedModels = ['Vendita una tantum']
+    
+    if (scalableModels.some(model => businessModel.includes(model))) return 85
+    if (moderateModels.some(model => businessModel.includes(model))) return 70
+    if (limitedModels.some(model => businessModel.includes(model))) return 55
+    
+    return 60 // Default per "Altro"
+  }
+  
+  private parseFundingAmount(fundingText: string): number {
+    if (!fundingText) return 300000
+    
+    const numbers = fundingText.match(/(\d+(?:[\.,]\d+)?)\s*([kmbt]?)/gi)
+    if (numbers && numbers.length > 0) {
+      const match = numbers[0].match(/(\d+(?:[\.,]\d+)?)\s*([kmbt]?)/i)
+      if (match) {
+        let value = parseFloat(match[1].replace(',', '.'))
+        const multiplier = match[2]?.toLowerCase()
+        
+        switch (multiplier) {
+          case 'k': value *= 1000; break
+          case 'm': value *= 1000000; break
+          case 'b': value *= 1000000000; break
+        }
+        
+        return value
+      }
+    }
+    
+    return 500000 // Default
+  }
+  
+  private generateMilestones(questionnaire: any): string[] {
+    const milestones = []
+    
+    if (questionnaire.productStage === 'Idea/Concept') {
+      milestones.push('Sviluppo MVP entro 6 mesi')
+    } else if (questionnaire.productStage === 'Prototipo') {
+      milestones.push('Lancio MVP entro 3 mesi')
+    } else if (questionnaire.productStage === 'MVP') {
+      milestones.push('Product-market fit validation entro 4 mesi')
+    }
+    
+    if (!questionnaire.currentRevenue) {
+      milestones.push('Primi ricavi entro 8 mesi')
+    } else {
+      milestones.push('Crescita ricavi 10x entro 12 mesi')
+    }
+    
+    if (questionnaire.teamSize === 'Solo io') {
+      milestones.push('Espansione team con CTO/CMO entro 6 mesi')
+    }
+    
+    milestones.push('Serie A readiness entro 18 mesi')
+    
+    return milestones
+  }
+  
   private performTeamAnalysis(data: any): any {
+    const hasQuestionnaire = !!data.questionnaire
+    
     return {
       founder_market_fit: {
-        score: data.hasTeamInfo ? (data.hasMarketAnalysis ? 70 : 55) : 35,
-        reasoning: data.hasTeamInfo ? 
-          'Team identificato, necessaria valutazione esperienza settoriale specifica' : 
-          'Informazioni sul team insufficienti per valutare founder-market fit'
+        score: hasQuestionnaire ? 
+          (data.questionnaire.teamExperience && data.questionnaire.marketValidation ? 85 :
+           data.questionnaire.teamExperience ? 70 : 50) :
+          (data.hasTeamInfo ? (data.hasMarketAnalysis ? 70 : 55) : 35),
+        reasoning: hasQuestionnaire ? 
+          `Esperienza team: ${data.questionnaire.teamExperience ? 'Documentata' : 'Non specificata'}. Validazione mercato: ${data.questionnaire.marketValidation ? 'Effettuata' : 'Mancante'}` :
+          (data.hasTeamInfo ? 'Team identificato, necessaria valutazione esperienza settoriale specifica' : 'Informazioni sul team insufficienti per valutare founder-market fit')
       },
       team_completeness: {
-        score: data.hasTeamInfo ? 60 : 30,
-        missing_roles: data.hasTeamInfo ? ['Ruoli specialistici da definire'] : ['CEO', 'CTO', 'CMO', 'Head of Sales', 'CFO']
+        score: hasQuestionnaire ? 
+          this.assessTeamCompleteness(data.questionnaire.teamSize, data.questionnaire.teamExperience) :
+          (data.hasTeamInfo ? 60 : 30),
+        missing_roles: hasQuestionnaire ? 
+          this.identifyMissingRoles(data.questionnaire.teamSize) :
+          (data.hasTeamInfo ? ['Ruoli specialistici da definire'] : ['CEO', 'CTO', 'CMO', 'Head of Sales', 'CFO'])
       },
       experience_relevance: {
-        score: data.hasTeamInfo ? 65 : 35,
-        key_experiences: data.hasTeamInfo ? ['Esperienza settoriale presente'] : ['Esperienza rilevante da documentare']
+        score: hasQuestionnaire ? 
+          (data.questionnaire.teamExperience ? 80 : 40) :
+          (data.hasTeamInfo ? 65 : 35),
+        key_experiences: hasQuestionnaire ? 
+          [data.questionnaire.teamExperience || 'Esperienza da documentare'] :
+          (data.hasTeamInfo ? ['Esperienza settoriale presente'] : ['Esperienza rilevante da documentare'])
       },
       track_record: {
-        score: data.hasTeamInfo ? 55 : 30,
-        previous_successes: data.hasTeamInfo ? ['Successi precedenti accennati'] : ['Track record da dimostrare con evidenze']
+        score: hasQuestionnaire ? 
+          (data.questionnaire.teamExperience?.includes('startup') || 
+           data.questionnaire.teamExperience?.includes('manager') ? 75 : 55) :
+          (data.hasTeamInfo ? 55 : 30),
+        previous_successes: hasQuestionnaire ? 
+          [data.questionnaire.teamExperience || 'Track record da documentare con evidenze'] :
+          (data.hasTeamInfo ? ['Successi precedenti accennati'] : ['Track record da dimostrare con evidenze'])
       },
       advisors_board: {
-        score: data.hasTeamInfo ? 50 : 25,
-        advisory_strength: data.hasTeamInfo ? 
-          'Advisory board da sviluppare con expertise settoriale' : 
-          'Advisory board non presente, necessario per credibilità'
+        score: hasQuestionnaire ? 
+          (data.questionnaire.teamAdvisors ? 75 : 35) :
+          (data.hasTeamInfo ? 50 : 25),
+        advisory_strength: hasQuestionnaire ? 
+          (data.questionnaire.teamAdvisors ? 
+           `Advisory board presente: ${data.questionnaire.teamAdvisors}` : 
+           'Advisory board assente, necessario per credibilità') :
+          (data.hasTeamInfo ? 'Advisory board da sviluppare con expertise settoriale' : 'Advisory board non presente, necessario per credibilità')
       },
-      summary: `Team: ${data.hasTeamInfo ? 'Identificato' : 'Da definire'} - Esperienza: ${data.hasTeamInfo ? 'Presente' : 'Mancante'} - Advisory: ${data.hasTeamInfo ? 'Da sviluppare' : 'Assente'}`
+      summary: hasQuestionnaire ? 
+        `Team: ${data.questionnaire.teamSize} - Esperienza: ${data.questionnaire.teamExperience ? 'Documentata' : 'Mancante'} - Advisory: ${data.questionnaire.teamAdvisors ? 'Presente' : 'Assente'}` :
+        `Team: ${data.hasTeamInfo ? 'Identificato' : 'Da definire'} - Esperienza: ${data.hasTeamInfo ? 'Presente' : 'Mancante'} - Advisory: ${data.hasTeamInfo ? 'Da sviluppare' : 'Assente'}`
+    }
+  }
+  
+  private assessTeamCompleteness(teamSize: string, teamExperience: string): number {
+    if (!teamSize) return 30
+    
+    switch (teamSize) {
+      case 'Solo io': return teamExperience ? 45 : 30
+      case '2 persone': return teamExperience ? 65 : 50
+      case '3-4 persone': return teamExperience ? 80 : 65
+      case '5+ persone': return teamExperience ? 90 : 75
+      default: return 40
+    }
+  }
+  
+  private identifyMissingRoles(teamSize: string): string[] {
+    if (!teamSize) return ['Team completo da definire']
+    
+    switch (teamSize) {
+      case 'Solo io': 
+        return ['Co-founder tecnico', 'Head of Sales', 'Marketing Manager', 'Advisory Board']
+      case '2 persone': 
+        return ['Head of Sales', 'Marketing Specialist', 'Advisory Board']
+      case '3-4 persone': 
+        return ['Sales Manager', 'Advisory Board settoriale']
+      case '5+ persone': 
+        return ['Advisory Board settoriale', 'Board of Directors']
+      default: 
+        return ['Composizione team da definire']
     }
   }
   
   private performProductAnalysis(data: any): any {
+    const hasQuestionnaire = !!data.questionnaire
+    
     return {
       product_market_fit: {
-        score: data.hasProductInfo ? (data.hasMarketAnalysis ? 65 : 45) : 30,
-        evidence: data.hasProductInfo ? ['Prodotto descritto con caratteristiche'] : ['Evidenze product-market fit completamente mancanti']
+        score: hasQuestionnaire ? 
+          (data.questionnaire.customerFeedback && data.questionnaire.marketValidation ? 85 :
+           data.questionnaire.marketValidation ? 70 :
+           data.questionnaire.productStage === 'MVP' ? 60 : 40) :
+          (data.hasProductInfo ? (data.hasMarketAnalysis ? 65 : 45) : 30),
+        evidence: hasQuestionnaire ? 
+          [data.questionnaire.customerFeedback || 'Feedback clienti da raccogliere',
+           data.questionnaire.marketValidation || 'Validazione mercato da effettuare'] :
+          (data.hasProductInfo ? ['Prodotto descritto con caratteristiche'] : ['Evidenze product-market fit completamente mancanti'])
       },
       development_stage: {
-        stage: data.hasProductInfo ? (data.hasTechnology ? 'Prototype' : 'Concept') : 'Idea',
-        score: data.hasProductInfo ? (data.hasTechnology ? 60 : 40) : 20,
-        reasoning: data.hasProductInfo ? 
-          'Stadio di sviluppo identificato, necessaria roadmap dettagliata' : 
-          'Stadio di sviluppo da definire con timeline e milestone'
+        stage: hasQuestionnaire ? 
+          data.questionnaire.productStage :
+          (data.hasProductInfo ? (data.hasTechnology ? 'Prototype' : 'Concept') : 'Idea'),
+        score: hasQuestionnaire ? 
+          this.getProductStageScore(data.questionnaire.productStage) :
+          (data.hasProductInfo ? (data.hasTechnology ? 60 : 40) : 20),
+        reasoning: hasQuestionnaire ? 
+          `Stadio ${data.questionnaire.productStage}. Valore unico: ${data.questionnaire.uniqueValue ? 'Definito' : 'Da chiarire'}` :
+          (data.hasProductInfo ? 'Stadio di sviluppo identificato, necessaria roadmap dettagliata' : 'Stadio di sviluppo da definire con timeline e milestone')
       },
       ip_protection: {
-        score: data.hasTechnology ? 50 : 25,
-        protections: data.hasTechnology ? ['Proprietà intellettuale da proteggere'] : ['Strategia IP completamente mancante']
+        score: hasQuestionnaire ? 
+          (data.questionnaire.productStage === 'Prodotto completo' ? 70 :
+           data.questionnaire.uniqueValue ? 60 : 40) :
+          (data.hasTechnology ? 50 : 25),
+        protections: hasQuestionnaire ? 
+          [`Valore unico: ${data.questionnaire.uniqueValue || 'Da definire'}`, 'Strategia IP da sviluppare'] :
+          (data.hasTechnology ? ['Proprietà intellettuale da proteggere'] : ['Strategia IP completamente mancante'])
       },
       scalability: {
-        technical: data.hasTechnology ? 65 : 40,
-        business: data.hasBusinessModel ? 70 : 45,
-        reasoning: data.hasTechnology ? 
-          'Scalabilità tecnica identificata, necessaria validazione architetturale' : 
-          'Scalabilità tecnica e business da valutare approfonditamente'
+        technical: hasQuestionnaire ? 
+          this.getProductStageScore(data.questionnaire.productStage) :
+          (data.hasTechnology ? 65 : 40),
+        business: hasQuestionnaire ? 
+          this.assessBusinessModelScalability(data.questionnaire.businessModel) :
+          (data.hasBusinessModel ? 70 : 45),
+        reasoning: hasQuestionnaire ? 
+          `Scalabilità basata su stadio ${data.questionnaire.productStage} e modello ${data.questionnaire.businessModel}` :
+          (data.hasTechnology ? 'Scalabilità tecnica identificata, necessaria validazione architetturale' : 'Scalabilità tecnica e business da valutare approfonditamente')
       },
       user_traction: {
-        score: data.hasProductInfo ? 45 : 25,
-        metrics: data.hasProductInfo ? ['Trazione utenti da misurare con KPI'] : ['Trazione utenti completamente mancante']
+        score: hasQuestionnaire ? 
+          (data.questionnaire.customerFeedback ? 75 :
+           data.questionnaire.productStage === 'MVP' ? 55 : 30) :
+          (data.hasProductInfo ? 45 : 25),
+        metrics: hasQuestionnaire ? 
+          [data.questionnaire.customerFeedback || 'Trazione utenti da misurare con KPI'] :
+          (data.hasProductInfo ? ['Trazione utenti da misurare con KPI'] : ['Trazione utenti completamente mancante'])
       },
-      summary: `Stadio: ${data.hasProductInfo ? (data.hasTechnology ? 'Prototype' : 'Concept') : 'Idea'} - PMF: ${data.hasProductInfo ? 'Parziale' : 'Mancante'} - Scalabilità: ${data.hasTechnology ? 'Identificata' : 'Da valutare'}`
+      summary: hasQuestionnaire ? 
+        `Stadio: ${data.questionnaire.productStage} - PMF: ${data.questionnaire.customerFeedback ? 'Validato' : 'Da validare'} - Scalabilità: ${data.questionnaire.uniqueValue ? 'Identificata' : 'Da definire'}` :
+        `Stadio: ${data.hasProductInfo ? (data.hasTechnology ? 'Prototype' : 'Concept') : 'Idea'} - PMF: ${data.hasProductInfo ? 'Parziale' : 'Mancante'} - Scalabilità: ${data.hasTechnology ? 'Identificata' : 'Da valutare'}`
+    }
+  }
+  
+  private getProductStageScore(stage: string): number {
+    if (!stage) return 20
+    
+    switch (stage) {
+      case 'Idea/Concept': return 25
+      case 'Prototipo': return 50
+      case 'MVP': return 75
+      case 'Prodotto funzionante': return 90
+      case 'Prodotto completo': return 95
+      default: return 30
     }
   }
   
   private assessInvestmentReadiness(data: any): any {
+    const hasQuestionnaire = !!data.questionnaire
+    
     return {
       pitch_deck_quality: {
-        score: data.contentLength > 5000 ? 65 : 40,
-        missing_elements: ['Executive Summary coinvolgente', 'Market Size quantificato', 'Financial Projections realistiche', 'Team completo']
+        score: hasQuestionnaire ? 80 : (data.contentLength > 5000 ? 65 : 40),
+        missing_elements: hasQuestionnaire ? 
+          this.identifyMissingPitchElements(data.questionnaire) :
+          ['Executive Summary coinvolgente', 'Market Size quantificato', 'Financial Projections realistiche', 'Team completo']
       },
       business_plan_completeness: {
-        score: data.wordCount > 3000 ? 70 : 45,
-        missing_sections: ['Market Analysis dettagliata', 'Competitive Analysis strutturata', 'Financial Model completo', 'Risk Analysis approfondita']
+        score: hasQuestionnaire ? 85 : (data.wordCount > 3000 ? 70 : 45),
+        missing_sections: hasQuestionnaire ? 
+          this.identifyMissingBusinessPlanSections(data.questionnaire) :
+          ['Market Analysis dettagliata', 'Competitive Analysis strutturata', 'Financial Model completo', 'Risk Analysis approfondita']
       },
       financial_model_quality: {
-        score: data.hasFinancialProjections ? 60 : 30,
-        improvements_needed: ['Unit Economics validation', 'Cash Flow dettagliato', 'Scenario Analysis multiple', 'Sensitivity Analysis']
+        score: hasQuestionnaire ? 
+          (data.questionnaire.revenueProjections && data.questionnaire.businessModel ? 80 : 55) :
+          (data.hasFinancialProjections ? 60 : 30),
+        improvements_needed: hasQuestionnaire ? 
+          this.identifyFinancialModelImprovements(data.questionnaire) :
+          ['Unit Economics validation', 'Cash Flow dettagliato', 'Scenario Analysis multiple', 'Sensitivity Analysis']
       },
       legal_structure: {
         score: 50,
         issues: ['Corporate Structure ottimizzata', 'IP Protection strategy', 'Regulatory Compliance', 'Shareholder Agreement']
       },
       due_diligence_readiness: {
-        score: 45,
-        missing_documents: ['Financial Statements auditati', 'Legal Documents completi', 'IP Portfolio documentato', 'Customer Contracts', 'Employment Agreements']
+        score: hasQuestionnaire ? 60 : 45,
+        missing_documents: hasQuestionnaire ? 
+          ['Financial Statements auditati', 'Legal Documents completi', 'Customer Contracts', 'Employment Agreements'] :
+          ['Financial Statements auditati', 'Legal Documents completi', 'IP Portfolio documentato', 'Customer Contracts', 'Employment Agreements']
       },
-      summary: `Investment Readiness: ${data.contentLength > 5000 ? 'Parziale' : 'Bassa'} - Due Diligence: ${data.hasFinancialProjections ? 'Preparazione iniziale' : 'Non pronta'}`
+      summary: hasQuestionnaire ? 
+        `Investment Readiness: Buona - Due Diligence: ${data.questionnaire.revenueProjections ? 'Preparazione avanzata' : 'Preparazione iniziale'}` :
+        `Investment Readiness: ${data.contentLength > 5000 ? 'Parziale' : 'Bassa'} - Due Diligence: ${data.hasFinancialProjections ? 'Preparazione iniziale' : 'Non pronta'}`
     }
+  }
+  
+  private identifyMissingPitchElements(questionnaire: any): string[] {
+    const missing = []
+    
+    if (!questionnaire.marketSize) {
+      missing.push('Market Size quantificato con TAM/SAM/SOM')
+    }
+    if (!questionnaire.revenueProjections) {
+      missing.push('Financial Projections dettagliate')
+    }
+    if (!questionnaire.teamAdvisors) {
+      missing.push('Advisory Board qualificato')
+    }
+    if (!questionnaire.customerFeedback) {
+      missing.push('Customer Validation con feedback')
+    }
+    if (!questionnaire.competitiveAdvantage) {
+      missing.push('Competitive Advantage sostenibile')
+    }
+    
+    return missing.length > 0 ? missing : ['Pitch deck foundation completa']
+  }
+  
+  private identifyMissingBusinessPlanSections(questionnaire: any): string[] {
+    const missing = []
+    
+    if (!questionnaire.marketSize) {
+      missing.push('Market Analysis con dimensioni quantificate')
+    }
+    if (!questionnaire.competitors || !questionnaire.competitiveAdvantage) {
+      missing.push('Competitive Analysis strutturata')
+    }
+    if (!questionnaire.revenueProjections) {
+      missing.push('Financial Model con proiezioni dettagliate')
+    }
+    if (!questionnaire.teamAdvisors) {
+      missing.push('Team Section con advisory board')
+    }
+    
+    return missing.length > 0 ? missing : ['Business plan foundation solida']
+  }
+  
+  private identifyFinancialModelImprovements(questionnaire: any): string[] {
+    const improvements = []
+    
+    if (!questionnaire.currentRevenue) {
+      improvements.push('Unit Economics validation con dati reali')
+    }
+    if (!questionnaire.revenueProjections) {
+      improvements.push('Cash Flow projections dettagliate')
+    }
+    if (questionnaire.businessModel === 'Altro') {
+      improvements.push('Revenue Model chiaramente definito')
+    }
+    
+    improvements.push('Scenario Analysis (best/worst/realistic case)')
+    improvements.push('Sensitivity Analysis per variabili chiave')
+    
+    return improvements
   }
   
   private calculateOverallScore(scores: any): number {
@@ -564,25 +1096,46 @@ export class ProfessionalStartupAnalyzer {
   
   private generateRecommendations(data: any, overallScore: number): string[] {
     const recommendations = []
+    const hasQuestionnaire = !!data.questionnaire
     
-    if (!data.hasMarketAnalysis) {
-      recommendations.push('Condurre ricerca di mercato dettagliata con quantificazione TAM/SAM/SOM e validazione customer')
-    }
-    
-    if (!data.hasCompetitiveAnalysis) {
-      recommendations.push('Sviluppare analisi competitiva strutturata con mappatura competitor e positioning')
-    }
-    
-    if (!data.hasFinancialProjections) {
-      recommendations.push('Creare modello finanziario con proiezioni 3-5 anni, unit economics e scenario analysis')
-    }
-    
-    if (!data.hasTeamInfo) {
-      recommendations.push('Completare team con competenze complementari e sviluppare advisory board settoriale')
-    }
-    
-    if (!data.hasBusinessModel) {
-      recommendations.push('Definire chiaramente modello di business, revenue streams e strategia monetizzazione')
+    if (hasQuestionnaire) {
+      if (!data.questionnaire.marketSize) {
+        recommendations.push('Quantificare dimensioni mercato con ricerca TAM/SAM/SOM dettagliata')
+      }
+      if (!data.questionnaire.competitors || !data.questionnaire.competitiveAdvantage) {
+        recommendations.push('Sviluppare analisi competitiva strutturata con mappatura competitor e positioning')
+      }
+      if (!data.questionnaire.revenueProjections) {
+        recommendations.push('Creare modello finanziario con proiezioni 3-5 anni e unit economics')
+      }
+      if (!data.questionnaire.teamAdvisors) {
+        recommendations.push('Sviluppare advisory board con expertise settoriale e investitori')
+      }
+      if (!data.questionnaire.customerFeedback) {
+        recommendations.push('Raccogliere feedback clienti sistematico per validare product-market fit')
+      }
+      if (data.questionnaire.teamSize === 'Solo io') {
+        recommendations.push('Completare team con co-founder complementari e competenze tecniche/commerciali')
+      }
+      if (data.questionnaire.productStage === 'Idea/Concept') {
+        recommendations.push('Sviluppare MVP funzionale per validazione mercato')
+      }
+    } else {
+      if (!data.hasMarketAnalysis) {
+        recommendations.push('Condurre ricerca di mercato dettagliata con quantificazione TAM/SAM/SOM e validazione customer')
+      }
+      if (!data.hasCompetitiveAnalysis) {
+        recommendations.push('Sviluppare analisi competitiva strutturata con mappatura competitor e positioning')
+      }
+      if (!data.hasFinancialProjections) {
+        recommendations.push('Creare modello finanziario con proiezioni 3-5 anni, unit economics e scenario analysis')
+      }
+      if (!data.hasTeamInfo) {
+        recommendations.push('Completare team con competenze complementari e sviluppare advisory board settoriale')
+      }
+      if (!data.hasBusinessModel) {
+        recommendations.push('Definire chiaramente modello di business, revenue streams e strategia monetizzazione')
+      }
     }
     
     if (overallScore < 60) {
@@ -597,15 +1150,26 @@ export class ProfessionalStartupAnalyzer {
   
   private identifyMissingAreas(data: any): string[] {
     const missing = []
+    const hasQuestionnaire = !!data.questionnaire
     
-    if (!data.hasMarketAnalysis) missing.push('Analisi di mercato quantitativa con TAM/SAM/SOM')
-    if (!data.hasCompetitiveAnalysis) missing.push('Analisi competitiva strutturata con positioning')
-    if (!data.hasFinancialProjections) missing.push('Proiezioni finanziarie dettagliate con unit economics')
-    if (!data.hasTeamInfo) missing.push('Informazioni complete sul team e advisory board')
-    if (!data.hasBusinessModel) missing.push('Modello di business definito con revenue streams')
-    if (!data.hasTechnology) missing.push('Specifiche tecniche dettagliate e architettura')
-    if (!data.hasProductInfo) missing.push('Descrizione prodotto/servizio completa con roadmap')
-    if (!data.hasInvestmentInfo) missing.push('Piano di investimento e utilizzo fondi con milestone')
+    if (hasQuestionnaire) {
+      if (!data.questionnaire.marketSize) missing.push('Analisi di mercato quantitativa con TAM/SAM/SOM')
+      if (!data.questionnaire.competitors || !data.questionnaire.competitiveAdvantage) missing.push('Analisi competitiva strutturata con positioning')
+      if (!data.questionnaire.revenueProjections) missing.push('Proiezioni finanziarie dettagliate con unit economics')
+      if (!data.questionnaire.teamAdvisors) missing.push('Advisory board qualificato con expertise settoriale')
+      if (!data.questionnaire.customerFeedback) missing.push('Validazione cliente con feedback sistematico')
+      if (data.questionnaire.productStage === 'Idea/Concept') missing.push('Sviluppo MVP per validazione mercato')
+      if (data.questionnaire.teamSize === 'Solo io') missing.push('Espansione team con competenze complementari')
+    } else {
+      if (!data.hasMarketAnalysis) missing.push('Analisi di mercato quantitativa con TAM/SAM/SOM')
+      if (!data.hasCompetitiveAnalysis) missing.push('Analisi competitiva strutturata con positioning')
+      if (!data.hasFinancialProjections) missing.push('Proiezioni finanziarie dettagliate con unit economics')
+      if (!data.hasTeamInfo) missing.push('Informazioni complete sul team e advisory board')
+      if (!data.hasBusinessModel) missing.push('Modello di business definito con revenue streams')
+      if (!data.hasTechnology) missing.push('Specifiche tecniche dettagliate e architettura')
+      if (!data.hasProductInfo) missing.push('Descrizione prodotto/servizio completa con roadmap')
+      if (!data.hasInvestmentInfo) missing.push('Piano di investimento e utilizzo fondi con milestone')
+    }
     
     return missing
   }
@@ -653,10 +1217,11 @@ export class ProfessionalStartupAnalyzer {
   }
 
   private generateExecutiveSummary(data: any, overallScore: number, valuationRange: any): string {
-    const projectType = this.identifyProjectType(data)
-    const keyStrengths = this.identifyKeyStrengths(data, overallScore)
-    const criticalWeaknesses = this.identifyCriticalWeaknesses(data, overallScore)
-    const marketPotential = this.assessMarketPotential(data)
+    const hasQuestionnaire = !!data.questionnaire
+    const projectType = this.identifyProjectType(data, hasQuestionnaire)
+    const keyStrengths = this.identifyKeyStrengths(data, overallScore, hasQuestionnaire)
+    const criticalWeaknesses = this.identifyCriticalWeaknesses(data, overallScore, hasQuestionnaire)
+    const marketPotential = this.assessMarketPotential(data, hasQuestionnaire)
     
     let summary = `## Executive Summary - Analisi Professionale\n\n`
     
@@ -688,41 +1253,53 @@ export class ProfessionalStartupAnalyzer {
     
     // Analisi di mercato
     summary += `### Contesto di Mercato\n`
-    summary += `L'analisi di mercato rivela ${this.getMarketAnalysisText(data)}. `
-    summary += `Il posizionamento competitivo ${this.getCompetitivePositionText(data)}, `
-    summary += `mentre le barriere all'ingresso ${this.getBarriersText(data)}. `
-    summary += `La validazione del product-market fit ${this.getPMFText(data)}.\n\n`
+    summary += `L'analisi di mercato rivela ${this.getMarketAnalysisText(data, hasQuestionnaire)}. `
+    summary += `Il posizionamento competitivo ${this.getCompetitivePositionText(data, hasQuestionnaire)}, `
+    summary += `mentre le barriere all'ingresso ${this.getBarriersText(data, hasQuestionnaire)}. `
+    summary += `La validazione del product-market fit ${this.getPMFText(data, hasQuestionnaire)}.\n\n`
     
     // Rischi principali
     summary += `### Profilo di Rischio\n`
-    summary += `I principali fattori di rischio identificati includono ${this.getRiskAnalysisText(data)}. `
-    summary += `Tuttavia, questi rischi sono ${this.getRiskMitigationText(data)} attraverso strategie mirate `
+    summary += `I principali fattori di rischio identificati includono ${this.getRiskAnalysisText(data, hasQuestionnaire)}. `
+    summary += `Tuttavia, questi rischi sono ${this.getRiskMitigationText(data, hasQuestionnaire)} attraverso strategie mirate `
     summary += `e un'esecuzione accurata del piano di sviluppo.\n\n`
     
     // Raccomandazioni strategiche
     summary += `### Raccomandazioni Strategiche\n`
     summary += `Per massimizzare il potenziale di successo, si raccomanda di: `
-    summary += `${this.getStrategicRecommendationsText(data, overallScore)}. `
-    summary += `Particolare attenzione dovrebbe essere rivolta ${this.getFocusAreasText(data, overallScore)}.\n\n`
+    summary += `${this.getStrategicRecommendationsText(data, overallScore, hasQuestionnaire)}. `
+    summary += `Particolare attenzione dovrebbe essere rivolta ${this.getFocusAreasText(data, overallScore, hasQuestionnaire)}.\n\n`
     
     // Conclusioni
     summary += `### Conclusioni\n`
-    summary += `${this.getConclusionText(overallScore, data)} `
+    summary += `${this.getConclusionText(overallScore, data, hasQuestionnaire)} `
     summary += `Con gli opportuni miglioramenti nelle aree identificate, il progetto presenta ${this.getOverallPotentialText(overallScore)} `
     summary += `per attrarre investimenti e raggiungere una crescita sostenibile nel mercato di riferimento.`
     
     return summary
   }
   
-  private identifyProjectType(data: any): string {
-    if (data.hasTechnology && data.hasProductInfo) {
-      return "una startup tecnologica innovativa"
-    } else if (data.hasBusinessModel && data.hasMarketAnalysis) {
-      return "un'iniziativa imprenditoriale strutturata"
-    } else if (data.hasProductInfo) {
-      return "un progetto di prodotto/servizio"
+  private identifyProjectType(data: any, hasQuestionnaire: boolean): string {
+    if (hasQuestionnaire) {
+      if (data.questionnaire.productStage === 'Prodotto completo') {
+        return "una startup tecnologica matura"
+      } else if (data.questionnaire.productStage === 'MVP') {
+        return "una startup in fase di validazione"
+      } else if (data.questionnaire.productStage === 'Prototipo') {
+        return "una startup in fase di sviluppo"
+      } else {
+        return "un'iniziativa imprenditoriale in fase iniziale"
+      }
     } else {
-      return "un'idea imprenditoriale in fase di definizione"
+      if (data.hasTechnology && data.hasProductInfo) {
+        return "una startup tecnologica innovativa"
+      } else if (data.hasBusinessModel && data.hasMarketAnalysis) {
+        return "un'iniziativa imprenditoriale strutturata"
+      } else if (data.hasProductInfo) {
+        return "un progetto di prodotto/servizio"
+      } else {
+        return "un'idea imprenditoriale in fase di definizione"
+      }
     }
   }
   
@@ -741,53 +1318,95 @@ export class ProfessionalStartupAnalyzer {
     return "iniziale richiedente approfondimenti sostanziali"
   }
   
-  private identifyKeyStrengths(data: any, score: number): string[] {
+  private identifyKeyStrengths(data: any, score: number, hasQuestionnaire: boolean): string[] {
     const strengths = []
     
-    if (data.hasMarketAnalysis) {
-      strengths.push("Comprensione solida del mercato di riferimento con identificazione chiara del target")
-    }
-    if (data.hasTechnology) {
-      strengths.push("Componente tecnologica innovativa con potenziale di differenziazione competitiva")
-    }
-    if (data.hasBusinessModel) {
-      strengths.push("Modello di business delineato con fonti di ricavo identificate")
-    }
-    if (data.hasTeamInfo) {
-      strengths.push("Presenza di un team con competenze rilevanti per l'esecuzione del progetto")
-    }
-    if (data.hasCompetitiveAnalysis) {
-      strengths.push("Analisi competitiva che dimostra consapevolezza del panorama concorrenziale")
+    if (hasQuestionnaire) {
+      if (data.questionnaire.marketValidation) {
+        strengths.push("Validazione di mercato effettuata con evidenze concrete di domanda")
+      }
+      if (data.questionnaire.productStage === 'MVP' || data.questionnaire.productStage === 'Prodotto completo') {
+        strengths.push("Prodotto sviluppato con potenziale di validazione product-market fit")
+      }
+      if (data.questionnaire.teamSize !== 'Solo io' && data.questionnaire.teamExperience) {
+        strengths.push("Team strutturato con esperienza documentata nel settore")
+      }
+      if (data.questionnaire.competitors && data.questionnaire.competitiveAdvantage) {
+        strengths.push("Analisi competitiva consapevole con vantaggio differenziante identificato")
+      }
+      if (data.questionnaire.revenueProjections) {
+        strengths.push("Modello finanziario con proiezioni strutturate per la crescita")
+      }
+      if (data.questionnaire.customerFeedback) {
+        strengths.push("Feedback clienti raccolto per validazione e miglioramento continuo")
+      }
+    } else {
+      if (data.hasMarketAnalysis) {
+        strengths.push("Comprensione solida del mercato di riferimento con identificazione chiara del target")
+      }
+      if (data.hasTechnology) {
+        strengths.push("Componente tecnologica innovativa con potenziale di differenziazione competitiva")
+      }
+      if (data.hasBusinessModel) {
+        strengths.push("Modello di business delineato con fonti di ricavo identificate")
+      }
+      if (data.hasTeamInfo) {
+        strengths.push("Presenza di un team con competenze rilevanti per l'esecuzione del progetto")
+      }
+      if (data.hasCompetitiveAnalysis) {
+        strengths.push("Analisi competitiva che dimostra consapevolezza del panorama concorrenziale")
+      }
     }
     
     if (score > 70) {
       strengths.push("Punteggio complessivo elevato che indica una preparazione avanzata per il mercato")
     }
     
-    if (data.contentLength > 5000) {
+    if (data.contentLength > 5000 || hasQuestionnaire) {
       strengths.push("Documentazione completa che evidenzia un approccio strutturato alla pianificazione")
     }
     
     return strengths.length > 0 ? strengths : ["Fondamenta del progetto con potenziale di sviluppo"]
   }
   
-  private identifyCriticalWeaknesses(data: any, score: number): string[] {
+  private identifyCriticalWeaknesses(data: any, score: number, hasQuestionnaire: boolean): string[] {
     const weaknesses = []
     
-    if (!data.hasMarketAnalysis) {
-      weaknesses.push("Mancanza di ricerca di mercato quantitativa per validare le dimensioni del TAM/SAM/SOM")
-    }
-    if (!data.hasCompetitiveAnalysis) {
-      weaknesses.push("Analisi competitiva insufficiente per identificare positioning e vantaggio competitivo sostenibile")
-    }
-    if (!data.hasFinancialProjections) {
-      weaknesses.push("Assenza di proiezioni finanziarie dettagliate e modello di unit economics validato")
-    }
-    if (!data.hasTeamInfo) {
-      weaknesses.push("Informazioni limitate sul team e assenza di advisory board qualificato")
-    }
-    if (!data.hasBusinessModel) {
-      weaknesses.push("Modello di business e strategia di monetizzazione non sufficientemente sviluppati")
+    if (hasQuestionnaire) {
+      if (!data.questionnaire.marketSize) {
+        weaknesses.push("Dimensioni di mercato non quantificate con analisi TAM/SAM/SOM dettagliata")
+      }
+      if (!data.questionnaire.competitors || !data.questionnaire.competitiveAdvantage) {
+        weaknesses.push("Analisi competitiva insufficiente per definire positioning strategico sostenibile")
+      }
+      if (!data.questionnaire.revenueProjections) {
+        weaknesses.push("Proiezioni finanziarie mancanti per validare sostenibilità economica")
+      }
+      if (!data.questionnaire.teamAdvisors) {
+        weaknesses.push("Advisory board assente, necessario per credibilità e supporto strategico")
+      }
+      if (!data.questionnaire.customerFeedback) {
+        weaknesses.push("Feedback clienti non raccolto per validazione product-market fit")
+      }
+      if (data.questionnaire.teamSize === 'Solo io') {
+        weaknesses.push("Team founder singolo con necessità di espansione per competenze complementari")
+      }
+    } else {
+      if (!data.hasMarketAnalysis) {
+        weaknesses.push("Mancanza di ricerca di mercato quantitativa per validare le dimensioni del TAM/SAM/SOM")
+      }
+      if (!data.hasCompetitiveAnalysis) {
+        weaknesses.push("Analisi competitiva insufficiente per identificare positioning e vantaggio competitivo sostenibile")
+      }
+      if (!data.hasFinancialProjections) {
+        weaknesses.push("Assenza di proiezioni finanziarie dettagliate e modello di unit economics validato")
+      }
+      if (!data.hasTeamInfo) {
+        weaknesses.push("Informazioni limitate sul team e assenza di advisory board qualificato")
+      }
+      if (!data.hasBusinessModel) {
+        weaknesses.push("Modello di business e strategia di monetizzazione non sufficientemente sviluppati")
+      }
     }
     
     if (score < 60) {
@@ -797,87 +1416,160 @@ export class ProfessionalStartupAnalyzer {
     return weaknesses.length > 0 ? weaknesses : ["Necessità di approfondimenti per ottimizzare il potenziale del progetto"]
   }
   
-  private assessMarketPotential(data: any): number {
+  private assessMarketPotential(data: any, hasQuestionnaire: boolean): number {
     let potential = 50 // Base
     
-    if (data.hasMarketAnalysis) potential += 20
-    if (data.hasCompetitiveAnalysis) potential += 15
-    if (data.contentLength > 3000) potential += 10
-    if (data.sections.length > 8) potential += 5
+    if (hasQuestionnaire) {
+      if (data.questionnaire.marketValidation) potential += 25
+      if (data.questionnaire.marketSize) potential += 15
+      if (data.questionnaire.targetMarket) potential += 10
+    } else {
+      if (data.hasMarketAnalysis) potential += 20
+      if (data.hasCompetitiveAnalysis) potential += 15
+      if (data.contentLength > 3000) potential += 10
+      if (data.sections.length > 8) potential += 5
+    }
     
     return Math.min(potential, 100)
   }
   
-  private getMarketAnalysisText(data: any): string {
-    if (data.hasMarketAnalysis) {
-      return "un mercato con caratteristiche attrattive e dimensioni significative, benché necessiti di quantificazione più precisa"
+  private getMarketAnalysisText(data: any, hasQuestionnaire: boolean): string {
+    if (hasQuestionnaire) {
+      if (data.questionnaire.marketValidation && data.questionnaire.marketSize) {
+        return "un mercato validato con dimensioni quantificate e opportunità concrete verificate"
+      } else if (data.questionnaire.marketValidation) {
+        return "un mercato con validazione iniziale effettuata, necessaria quantificazione dimensioni"
+      } else {
+        return "la necessità di validazione mercato attraverso ricerca strutturata e customer discovery"
+      }
+    } else {
+      if (data.hasMarketAnalysis) {
+        return "un mercato con caratteristiche attrattive e dimensioni significative, benché necessiti di quantificazione più precisa"
+      }
+      return "la necessità di approfondire la ricerca di mercato per validare le opportunità commerciali"
     }
-    return "la necessità di approfondire la ricerca di mercato per validare le opportunità commerciali"
   }
   
-  private getCompetitivePositionText(data: any): string {
-    if (data.hasCompetitiveAnalysis) {
-      return "mostra potenziale di differenziazione, richiedendo tuttavia consolidamento del vantaggio competitivo"
+  private getCompetitivePositionText(data: any, hasQuestionnaire: boolean): string {
+    if (hasQuestionnaire) {
+      if (data.questionnaire.competitors && data.questionnaire.competitiveAdvantage) {
+        return "mostra differenziazione chiara con vantaggio competitivo identificato e difendibile"
+      } else {
+        return "necessita di definizione attraverso analisi strutturata dei competitor e positioning"
+      }
+    } else {
+      if (data.hasCompetitiveAnalysis) {
+        return "mostra potenziale di differenziazione, richiedendo tuttavia consolidamento del vantaggio competitivo"
+      }
+      return "necessita di definizione attraverso un'analisi strutturata dei competitor diretti e indiretti"
     }
-    return "necessita di definizione attraverso un'analisi strutturata dei competitor diretti e indiretti"
   }
   
-  private getBarriersText(data: any): string {
-    if (data.hasTechnology) {
-      return "presentano opportunità di protezione attraverso know-how tecnologico e proprietà intellettuale"
+  private getBarriersText(data: any, hasQuestionnaire: boolean): string {
+    if (hasQuestionnaire) {
+      if (data.questionnaire.productStage === 'Prodotto completo' || data.questionnaire.uniqueValue) {
+        return "presentano opportunità di protezione attraverso know-how sviluppato e valore unico"
+      } else {
+        return "richiedono sviluppo strategico per creare difendibilità sostenibile nel tempo"
+      }
+    } else {
+      if (data.hasTechnology) {
+        return "presentano opportunità di protezione attraverso know-how tecnologico e proprietà intellettuale"
+      }
+      return "richiedono sviluppo strategico per creare difendibilità nel tempo"
     }
-    return "richiedono sviluppo strategico per creare difendibilità nel tempo"
   }
   
-  private getPMFText(data: any): string {
-    if (data.hasProductInfo && data.hasMarketAnalysis) {
-      return "presenta indicatori iniziali positivi che necessitano di validazione empirica con clienti target"
+  private getPMFText(data: any, hasQuestionnaire: boolean): string {
+    if (hasQuestionnaire) {
+      if (data.questionnaire.customerFeedback && data.questionnaire.marketValidation) {
+        return "presenta evidenze concrete di fit con feedback positivi da clienti target"
+      } else if (data.questionnaire.marketValidation) {
+        return "mostra indicatori di validazione iniziale, necessario feedback sistematico da clienti"
+      } else {
+        return "rimane da dimostrare attraverso customer discovery e validazione empirica"
+      }
+    } else {
+      if (data.hasProductInfo && data.hasMarketAnalysis) {
+        return "presenta indicatori iniziali positivi che necessitano di validazione empirica con clienti target"
+      }
+      return "rimane da dimostrare attraverso ricerca di mercato e feedback degli utenti"
     }
-    return "rimane da dimostrare attraverso ricerca di mercato e feedback degli utenti"
   }
   
-  private getRiskAnalysisText(data: any): string {
+  private getRiskAnalysisText(data: any, hasQuestionnaire: boolean): string {
     const risks = []
-    if (!data.hasTeamInfo) risks.push("rischio di esecuzione legato alla composizione del team")
-    if (!data.hasMarketAnalysis) risks.push("rischio di mercato per validazione insufficiente della domanda")
-    if (!data.hasTechnology) risks.push("rischio tecnologico per specifiche implementative non definite")
-    if (!data.hasFinancialProjections) risks.push("rischio finanziario per sostenibilità economica non dimostrata")
+    
+    if (hasQuestionnaire) {
+      if (data.questionnaire.teamSize === 'Solo io') risks.push("rischio esecutivo per composizione team limitata")
+      if (!data.questionnaire.marketValidation) risks.push("rischio mercato per validazione domanda insufficiente")
+      if (data.questionnaire.productStage === 'Idea/Concept') risks.push("rischio tecnologico per stadio sviluppo iniziale")
+      if (!data.questionnaire.revenueProjections) risks.push("rischio finanziario per sostenibilità economica non dimostrata")
+    } else {
+      if (!data.hasTeamInfo) risks.push("rischio di esecuzione legato alla composizione del team")
+      if (!data.hasMarketAnalysis) risks.push("rischio di mercato per validazione insufficiente della domanda")
+      if (!data.hasTechnology) risks.push("rischio tecnologico per specifiche implementative non definite")
+      if (!data.hasFinancialProjections) risks.push("rischio finanziario per sostenibilità economica non dimostrata")
+    }
     
     return risks.length > 0 ? risks.join(", ") : "fattori di rischio gestibili con appropriata pianificazione"
   }
   
-  private getRiskMitigationText(data: any): string {
-    if (data.contentLength > 5000) {
-      return "mitigabili attraverso la strutturazione già dimostrata nel documento"
+  private getRiskMitigationText(data: any, hasQuestionnaire: boolean): string {
+    if (hasQuestionnaire) {
+      return "mitigabili attraverso l'implementazione delle raccomandazioni specifiche identificate"
+    } else {
+      if (data.contentLength > 5000) {
+        return "mitigabili attraverso la strutturazione già dimostrata nel documento"
+      }
+      return "affrontabili con sviluppo strutturato delle aree mancanti"
     }
-    return "affrontabili con sviluppo strutturato delle aree mancanti"
   }
   
-  private getStrategicRecommendationsText(data: any, score: number): string {
+  private getStrategicRecommendationsText(data: any, score: number, hasQuestionnaire: boolean): string {
     const priorities = []
     
-    if (!data.hasMarketAnalysis) priorities.push("completare la ricerca di mercato con analisi TAM/SAM/SOM")
-    if (!data.hasFinancialProjections) priorities.push("sviluppare proiezioni finanziarie e unit economics")
-    if (!data.hasTeamInfo) priorities.push("rafforzare il team con competenze complementari")
-    if (score < 70) priorities.push("implementare un piano di validazione del product-market fit")
+    if (hasQuestionnaire) {
+      if (!data.questionnaire.marketSize) priorities.push("quantificare le dimensioni di mercato con analisi TAM/SAM/SOM")
+      if (!data.questionnaire.revenueProjections) priorities.push("sviluppare proiezioni finanziarie e unit economics")
+      if (!data.questionnaire.teamAdvisors) priorities.push("costruire advisory board con expertise settoriale")
+      if (!data.questionnaire.customerFeedback) priorities.push("raccogliere feedback sistematico dai clienti target")
+    } else {
+      if (!data.hasMarketAnalysis) priorities.push("completare la ricerca di mercato con analisi TAM/SAM/SOM")
+      if (!data.hasFinancialProjections) priorities.push("sviluppare proiezioni finanziarie e unit economics")
+      if (!data.hasTeamInfo) priorities.push("rafforzare il team con competenze complementari")
+      if (score < 70) priorities.push("implementare un piano di validazione del product-market fit")
+    }
     
     return priorities.join(", ")
   }
   
-  private getFocusAreasText(data: any, score: number): string {
-    if (!data.hasMarketAnalysis) {
-      return "alla validazione empirica della domanda di mercato attraverso interviste e sondaggi"
-    }
-    if (!data.hasFinancialProjections) {
-      return "allo sviluppo di un modello finanziario robusto con scenario analysis"
-    }
-    if (score < 60) {
-      return "al consolidamento delle fondamenta del business model"
+  private getFocusAreasText(data: any, score: number, hasQuestionnaire: boolean): string {
+    if (hasQuestionnaire) {
+      if (!data.questionnaire.marketValidation) {
+        return "alla validazione empirica della domanda attraverso customer discovery strutturato"
+      }
+      if (!data.questionnaire.revenueProjections) {
+        return "allo sviluppo di un modello finanziario robusto con scenario analysis"
+      }
+      if (data.questionnaire.teamSize === 'Solo io') {
+        return "all'espansione del team con competenze tecniche e commerciali complementari"
+      }
+    } else {
+      if (!data.hasMarketAnalysis) {
+        return "alla validazione empirica della domanda di mercato attraverso interviste e sondaggi"
+      }
+      if (!data.hasFinancialProjections) {
+        return "allo sviluppo di un modello finanziario robusto con scenario analysis"
+      }
+      if (score < 60) {
+        return "al consolidamento delle fondamenta del business model"
+      }
     }
     return "all'ottimizzazione degli elementi di forza già identificati"
   }
   
-  private getConclusionText(score: number, data: any): string {
+  private getConclusionText(score: number, data: any, hasQuestionnaire: boolean): string {
     if (score >= 80) {
       return "Il progetto dimostra una maturità eccellente e risulta pronto per approcci di investimento strutturati."
     }
