@@ -1390,7 +1390,7 @@ export default function AICoach({ project, analysis, onImprove, onClose }: AICoa
                       Evoluzione Score
                     </h4>
                     <div className="space-y-3">
-                      {analyticsData.scoreHistory.map((point, index) => (
+                      {analyticsData.scoreHistory.map((point: any, index: number) => (
                         <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div>
                             <div className="font-medium text-gray-900">{point.event}</div>
