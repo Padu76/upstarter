@@ -203,10 +203,10 @@ export async function POST(request: NextRequest) {
       ...profileData,
       skills: profileData.skills.join(', '),
       industry_focus: profileData.industry_focus.join(', '),
-      previous_roles: profileData.previous_roles.join(', '),
+      previous_roles: (profileData.previous_roles || []).join(', '),
       startup_stage_preference: profileData.startup_stage_preference.join(', '),
-      investment_stage_preference: profileData.investment_stage_preference.join(', '),
-      geographic_preference: profileData.geographic_preference.join(', ')
+      investment_stage_preference: (profileData.investment_stage_preference || []).join(', '),
+      geographic_preference: (profileData.geographic_preference || []).join(', ')
     }
 
     // Create record in Airtable
@@ -278,7 +278,7 @@ export async function PUT(request: NextRequest) {
       skills: Array.isArray(body.skills) ? body.skills.join(', ') : body.skills,
       experience_years: body.experience_years,
       industry_focus: Array.isArray(body.industry_focus) ? body.industry_focus.join(', ') : body.industry_focus,
-      previous_roles: Array.isArray(body.previous_roles) ? body.previous_roles.join(', ') : body.previous_roles,
+      previous_roles: Array.isArray(body.previous_roles) ? body.previous_roles.join(', ') : (body.previous_roles || ''),
       startup_stage_preference: Array.isArray(body.startup_stage_preference) ? body.startup_stage_preference.join(', ') : body.startup_stage_preference,
       equity_expectations: body.equity_expectations,
       compensation_needs: body.compensation_needs,
@@ -288,8 +288,8 @@ export async function PUT(request: NextRequest) {
       github_url: body.github_url || '',
       website_url: body.website_url || '',
       team_size_preference: body.team_size_preference || '',
-      investment_stage_preference: Array.isArray(body.investment_stage_preference) ? body.investment_stage_preference.join(', ') : body.investment_stage_preference,
-      geographic_preference: Array.isArray(body.geographic_preference) ? body.geographic_preference.join(', ') : body.geographic_preference,
+      investment_stage_preference: Array.isArray(body.investment_stage_preference) ? body.investment_stage_preference.join(', ') : (body.investment_stage_preference || ''),
+      geographic_preference: Array.isArray(body.geographic_preference) ? body.geographic_preference.join(', ') : (body.geographic_preference || ''),
       updated_at: now
     }
 
