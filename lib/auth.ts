@@ -111,7 +111,7 @@ export const authOptions: NextAuthOptions = {
         email: token.email, 
         provider: token.provider,
         userId: token.userId,
-        expires: new Date(token.exp! * 1000).toISOString()
+        expires: token.exp ? new Date((token.exp as number) * 1000).toISOString() : 'No expiration'
       })
       
       return token
