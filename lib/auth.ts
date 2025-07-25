@@ -97,17 +97,21 @@ export const authOptions: NextAuthOptions = {
         token.name = user.name
         token.image = user.image
         token.provider = account?.provider
+        // Set token expiration to match session maxAge
+        token.exp = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days
       }
       
-      // Refresh token
-      if (trigger === 'update') {
-        console.log('🔄 JWT refresh triggered')
+      // Refresh token on each request to extend session
+      if (trigger === 'update' || !token.exp) {
+        token.exp = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // Reset to 30 days
+        console.log('🔄 JWT refresh triggered - session extended')
       }
       
       console.log('🔑 JWT callback:', { 
         email: token.email, 
         provider: token.provider,
-        userId: token.userId 
+        userId: token.userId,
+        expires: new Date(token.exp! * 1000).toISOString()
       })
       
       return token
@@ -149,8 +153,8 @@ export const authOptions: NextAuthOptions = {
   
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 24 hours
+    maxAge: 30 * 24 * 60 * 60, // 30 days - PERSISTENT SESSION
+    updateAge: 0, // Update session on every request to extend expiration
   },
   
   // Security
@@ -159,7 +163,7 @@ export const authOptions: NextAuthOptions = {
   // Debug only in development
   debug: process.env.NODE_ENV === 'development',
   
-  // Enhanced cookie configuration for better persistence
+  // Enhanced cookie configuration for MAXIMUM persistence
   cookies: {
     sessionToken: {
       name: process.env.NODE_ENV === 'production' 
@@ -173,7 +177,7 @@ export const authOptions: NextAuthOptions = {
         domain: process.env.NODE_ENV === 'production' 
           ? process.env.COOKIE_DOMAIN 
           : undefined,
-        maxAge: 30 * 24 * 60 * 60 // 30 days
+        maxAge: 30 * 24 * 60 * 60 // 30 days - PERSISTENT COOKIE
       }
     },
     callbackUrl: {
@@ -200,7 +204,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 30 * 24 * 60 * 60
+        maxAge: 30 * 24 * 60 * 60 // Extended CSRF token
       }
     },
     pkceCodeVerifier: {
@@ -212,7 +216,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 900 // 15 minutes
+        maxAge: 900 // 15 minutes (OAuth flow)
       }
     },
     state: {
@@ -224,7 +228,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 900 // 15 minutes
+        maxAge: 900 // 15 minutes (OAuth flow)
       }
     },
     nonce: {
@@ -236,12 +240,12 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 900 // 15 minutes
+        maxAge: 900 // 15 minutes (OAuth flow)
       }
     }
   },
   
-  // Events for debugging
+  // Events for debugging and session management
   events: {
     async signIn(message) {
       console.log('🎉 User signed in:', message.user.email)
