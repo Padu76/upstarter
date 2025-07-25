@@ -30,9 +30,9 @@ export default function HomePage() {
               <a href="#analizza" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Analizza Idea
               </a>
-              <a href="#teamup" className="text-gray-600 hover:text-gray-900 transition-colors">
+              <Link href="/team-up" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Trova Team
-              </a>
+              </Link>
               <a href="#testimonials" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Testimonianze
               </a>
@@ -71,9 +71,9 @@ export default function HomePage() {
                 <a href="#analizza" className="text-gray-600 hover:text-gray-900 px-4 py-2">
                   Analizza Idea
                 </a>
-                <a href="#teamup" className="text-gray-600 hover:text-gray-900 px-4 py-2">
+                <Link href="/team-up" className="text-gray-600 hover:text-gray-900 px-4 py-2">
                   Trova Team
-                </a>
+                </Link>
                 <a href="#testimonials" className="text-gray-600 hover:text-gray-900 px-4 py-2">
                   Testimonianze
                 </a>
@@ -444,7 +444,7 @@ export default function HomePage() {
               <h4 className="font-semibold mb-4">Prodotto</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#analizza" className="hover:text-white transition-colors">Analisi Idee</a></li>
-                <li><a href="#teamup" className="hover:text-white transition-colors">TeamUp</a></li>
+                <li><Link href="/team-up" className="hover:text-white transition-colors">TeamUp</Link></li>
                 <li><a href="#come-funziona" className="hover:text-white transition-colors">Come Funziona</a></li>
               </ul>
             </div>
