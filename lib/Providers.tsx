@@ -2,16 +2,21 @@
 
 import { SessionProvider } from 'next-auth/react'
 import { ReactNode } from 'react'
-import { Session } from 'next-auth'
 
 interface ProvidersProps {
   children: ReactNode
-  session?: Session | null
 }
 
-export default function Providers({ children, session }: ProvidersProps) {
+export default function Providers({ children }: ProvidersProps) {
   return (
-    <SessionProvider session={session}>
+    <SessionProvider
+      // Refetch session ogni 5 minuti per mantenere token fresh
+      refetchInterval={5 * 60}
+      // Refetch quando la finestra torna in focus
+      refetchOnWindowFocus={true}
+      // Refetch quando si rileva che il token è scaduto
+      refetchWhenOffline={false}
+    >
       {children}
     </SessionProvider>
   )
