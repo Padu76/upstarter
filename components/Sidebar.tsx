@@ -82,11 +82,10 @@ export default function Sidebar() {
       stats: projectCount > 0 ? `${completedCount} completati, ${draftCount} bozze` : null
     },
     {
-      name: 'Team',
+      name: 'TeamUp',
       icon: Users,
-      path: '/dashboard/team',
-      description: 'Gestione team',
-      comingSoon: true
+      path: '/team-up',
+      description: 'Trova co-founder'
     },
     {
       name: 'Investitori',
