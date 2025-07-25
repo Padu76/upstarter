@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 import { 
   Users, UserPlus, Search, Settings, 
   ArrowLeft, CheckCircle, AlertCircle,
-  Loader2, Star, TrendingUp
+  Loader2, Star, TrendingUp, Sparkles,
+  ArrowRight
 } from 'lucide-react'
 import TeamProfileSetup from '@/components/TeamProfileSetup'
 import TeamBrowse from '@/components/TeamBrowse'
@@ -67,13 +68,13 @@ export default function TeamUpPage() {
           setActiveTab('browse') // Default to browse if has profile
         } else {
           setHasProfile(false)
-          setActiveTab('setup') // Default to setup if no profile
+          setActiveTab('browse') // ALWAYS default to browse - show CTA if no profile
         }
       }
     } catch (error) {
       console.error('Failed to check user profile:', error)
       setHasProfile(false)
-      setActiveTab('setup')
+      setActiveTab('browse') // ALWAYS default to browse - show CTA if no profile
     } finally {
       setIsLoading(false)
     }
@@ -204,27 +205,25 @@ export default function TeamUpPage() {
               </div>
             </button>
 
-            {/* Setup Tab - Show if no profile */}
-            {!hasProfile && (
-              <button
-                onClick={() => setActiveTab('setup')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'setup'
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Crea Profilo
-                  {!hasProfile && (
-                    <span className="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
-                      Richiesto
-                    </span>
-                  )}
-                </div>
-              </button>
-            )}
+            {/* Setup Tab - Always show */}
+            <button
+              onClick={() => setActiveTab('setup')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'setup'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center">
+                <UserPlus className="w-4 h-4 mr-2" />
+                {hasProfile ? 'Modifica Profilo' : 'Crea Profilo'}
+                {!hasProfile && (
+                  <span className="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
+                    Richiesto
+                  </span>
+                )}
+              </div>
+            </button>
 
             {/* Profile Tab - Show if has profile */}
             {hasProfile && (
@@ -248,27 +247,52 @@ export default function TeamUpPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto">
-        {/* No Profile Warning */}
+        {/* No Profile CTA Banner - Enhanced */}
         {!hasProfile && activeTab === 'browse' && (
           <div className="mx-4 sm:mx-6 lg:mx-8 mt-6">
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="bg-gradient-to-r from-purple-500 to-blue-600 p-3 rounded-lg">
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Unisciti alla Community di Co-founder
+                    </h3>
+                    <p className="text-gray-600 mt-1">
+                      Crea il tuo profilo per contattare e essere contattato da altri founder. È gratuito e richiede solo 5 minuti.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex-shrink-0 ml-6">
+                  <button
+                    onClick={() => setActiveTab('setup')}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center transition-all transform hover:scale-105"
+                  >
+                    <UserPlus className="w-5 h-5 mr-2" />
+                    Crea Profilo
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Restricted Access Warning for Browse */}
+        {!hasProfile && activeTab === 'browse' && (
+          <div className="mx-4 sm:mx-6 lg:mx-8 mt-4">
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
               <div className="flex">
-                <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-amber-800">
-                    Profilo Team Richiesto
+                    Accesso Limitato
                   </h3>
                   <p className="mt-1 text-sm text-amber-700">
-                    Per vedere e contattare altri co-founder, devi prima completare il tuo profilo team.
+                    Per proteggere la privacy della community, puoi vedere i profili ma non contattare altri founder senza aver creato il tuo profilo.
                   </p>
-                  <div className="mt-3">
-                    <button
-                      onClick={() => setActiveTab('setup')}
-                      className="bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-medium px-3 py-2 rounded-md transition-colors"
-                    >
-                      Completa Profilo →
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -284,11 +308,11 @@ export default function TeamUpPage() {
           </div>
         )}
 
-        {activeTab === 'browse' && hasProfile && (
+        {activeTab === 'browse' && (
           <div className="py-6">
             <TeamBrowse
               onViewProfile={handleViewProfile}
-              onContactProfile={handleContactProfile}
+              onContactProfile={hasProfile ? handleContactProfile : undefined}
             />
           </div>
         )}
