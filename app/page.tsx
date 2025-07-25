@@ -1,12 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { Rocket, Users, TrendingUp, ArrowRight, Star, CheckCircle, MessageSquare, Target, Lightbulb, UserPlus, Menu, X } from 'lucide-react'
+import { Rocket, Users, TrendingUp, ArrowRight, Star, CheckCircle, MessageSquare, Target, Lightbulb, UserPlus, Menu, X, BarChart3, User } from 'lucide-react'
 
 export default function HomePage() {
+  const { data: session, status } = useSession()
   const [activeTab, setActiveTab] = useState<'idea' | 'team'>('idea')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  const isAuthenticated = status === 'authenticated'
+  const isLoading = status === 'loading'
 
   return (
     <div className="min-h-screen bg-white">
@@ -38,14 +43,38 @@ export default function HomePage() {
               </a>
             </div>
 
-            {/* Auth Buttons */}
+            {/* Auth Buttons - Dynamic per stato login */}
             <div className="hidden md:flex items-center gap-3">
-              <Link href="/auth/signin" className="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors">
-                Accedi
-              </Link>
-              <Link href="/auth/signup" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                Inizia Gratis
-              </Link>
+              {isLoading ? (
+                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              ) : isAuthenticated ? (
+                // Utente loggato - Mostra Dashboard + Profile
+                <>
+                  <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600">
+                    <User className="w-4 h-4" />
+                    <span className="hidden lg:inline">
+                      {session.user?.name || session.user?.email?.split('@')[0]}
+                    </span>
+                  </div>
+                  <Link 
+                    href="/dashboard" 
+                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Dashboard
+                  </Link>
+                </>
+              ) : (
+                // Utente non loggato - Mostra Login + Signup
+                <>
+                  <Link href="/auth/signin" className="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors">
+                    Accedi
+                  </Link>
+                  <Link href="/auth/signup" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Inizia Gratis
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile menu button */}
@@ -78,12 +107,31 @@ export default function HomePage() {
                   Testimonianze
                 </a>
                 <div className="flex flex-col gap-2 px-4 pt-3 border-t border-gray-200">
-                  <Link href="/auth/signin" className="text-center text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors">
-                    Accedi
-                  </Link>
-                  <Link href="/auth/signup" className="text-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                    Inizia Gratis
-                  </Link>
+                  {isAuthenticated ? (
+                    // Mobile - Utente loggato
+                    <>
+                      <div className="text-sm text-gray-600 px-4 py-2">
+                        Benvenuto, {session.user?.name || session.user?.email?.split('@')[0]}
+                      </div>
+                      <Link 
+                        href="/dashboard" 
+                        className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        Vai alla Dashboard
+                      </Link>
+                    </>
+                  ) : (
+                    // Mobile - Utente non loggato
+                    <>
+                      <Link href="/auth/signin" className="text-center text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors">
+                        Accedi
+                      </Link>
+                      <Link href="/auth/signup" className="text-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        Inizia Gratis
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -91,32 +139,129 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section - Dinamico per stato login */}
       <section className="pt-24 pb-12 bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-              Trasforma le tue{' '}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                idee
-              </span>{' '}
-              in startup di successo
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-              La piattaforma evolutiva che analizza le tue idee con sistema avanzato,
-              ti aiuta a trovare co-founder perfetti e ti guida verso il successo imprenditoriale.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/auth/signup" className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-semibold">
-                Inizia Gratuitamente
-              </Link>
-              <a href="#come-funziona" className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:bg-gray-50 transition-colors text-lg font-semibold">
-                Scopri Come Funziona
-              </a>
-            </div>
+            {isAuthenticated ? (
+              // Hero per utenti loggati
+              <>
+                <div className="flex items-center justify-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                  <span className="text-green-600 font-medium">Benvenuto di nuovo!</span>
+                </div>
+                <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+                  Continua il tuo{' '}
+                  <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    percorso
+                  </span>{' '}
+                  imprenditoriale
+                </h1>
+                <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                  Ciao {session.user?.name || session.user?.email?.split('@')[0]}! 
+                  Torna alla tua dashboard per continuare ad analizzare idee e costruire il tuo team.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link 
+                    href="/dashboard" 
+                    className="flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-semibold"
+                  >
+                    <BarChart3 className="w-5 h-5" />
+                    Vai alla Dashboard
+                  </Link>
+                  <Link 
+                    href="/team-up" 
+                    className="flex items-center justify-center gap-2 border border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:bg-gray-50 transition-colors text-lg font-semibold"
+                  >
+                    <Users className="w-5 h-5" />
+                    Esplora Team-Up
+                  </Link>
+                </div>
+              </>
+            ) : (
+              // Hero per utenti non loggati
+              <>
+                <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+                  Trasforma le tue{' '}
+                  <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    idee
+                  </span>{' '}
+                  in startup di successo
+                </h1>
+                <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                  La piattaforma evolutiva che analizza le tue idee con sistema avanzato,
+                  ti aiuta a trovare co-founder perfetti e ti guida verso il successo imprenditoriale.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link href="/auth/signup" className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-semibold">
+                    Inizia Gratuitamente
+                  </Link>
+                  <a href="#come-funziona" className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:bg-gray-50 transition-colors text-lg font-semibold">
+                    Scopri Come Funziona
+                  </a>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
+
+      {/* Quick Access per utenti loggati */}
+      {isAuthenticated && (
+        <section className="py-12 bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Accesso Rapido</h2>
+              <p className="text-gray-600">Le tue funzionalità preferite a portata di click</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <Link 
+                href="/dashboard/new-idea" 
+                className="group bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 hover:from-blue-100 hover:to-blue-200 transition-all duration-200 border border-blue-200"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Lightbulb className="w-6 h-6 text-white" />
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Analizza Nuova Idea</h3>
+                <p className="text-sm text-gray-600">Carica un documento o compila il form guidato</p>
+              </Link>
+
+              <Link 
+                href="/team-up" 
+                className="group bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 hover:from-purple-100 hover:to-purple-200 transition-all duration-200 border border-purple-200"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-purple-600 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Trova Co-founder</h3>
+                <p className="text-sm text-gray-600">Esplora profili e crea il tuo team perfetto</p>
+              </Link>
+
+              <Link 
+                href="/dashboard/projects" 
+                className="group bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 hover:from-green-100 hover:to-green-200 transition-all duration-200 border border-green-200"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <BarChart3 className="w-6 h-6 text-white" />
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-green-600 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">I Miei Progetti</h3>
+                <p className="text-sm text-gray-600">Gestisci e monitora le tue analisi</p>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Come Funziona Section */}
       <section id="come-funziona" className="py-20 bg-white">
@@ -224,10 +369,10 @@ export default function HomePage() {
                       </li>
                     </ul>
                     <Link
-                      href="/auth/signup"
+                      href={isAuthenticated ? "/dashboard/new-idea" : "/auth/signup"}
                       className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
                     >
-                      Analizza la Tua Idea
+                      {isAuthenticated ? "Analizza Nuova Idea" : "Analizza la Tua Idea"}
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
@@ -408,19 +553,36 @@ export default function HomePage() {
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold text-white mb-6">
-            Pronto a Trasformare la Tua Idea in Realtà?
+            {isAuthenticated ? "Continua a Crescere con UpStarter" : "Pronto a Trasformare la Tua Idea in Realtà?"}
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Unisciti a migliaia di imprenditori che hanno scelto UpStarter per il loro percorso startup
+            {isAuthenticated 
+              ? "Il tuo percorso imprenditoriale è appena iniziato. Esplora nuove opportunità e costruisci il tuo futuro."
+              : "Unisciti a migliaia di imprenditori che hanno scelto UpStarter per il loro percorso startup"
+            }
           </p>
           <Link
-            href="/auth/signup"
+            href={isAuthenticated ? "/dashboard" : "/auth/signup"}
             className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors text-lg font-semibold"
           >
-            Inizia Gratuitamente
-            <ArrowRight className="w-5 h-5" />
+            {isAuthenticated ? (
+              <>
+                <BarChart3 className="w-5 h-5" />
+                Vai alla Dashboard
+              </>
+            ) : (
+              <>
+                Inizia Gratuitamente
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
           </Link>
-          <p className="text-blue-100 text-sm mt-4">Nessuna carta di credito richiesta • Setup in 2 minuti</p>
+          <p className="text-blue-100 text-sm mt-4">
+            {isAuthenticated 
+              ? "I tuoi progetti ti stanno aspettando"
+              : "Nessuna carta di credito richiesta • Setup in 2 minuti"
+            }
+          </p>
         </div>
       </section>
 
