@@ -15,7 +15,7 @@ interface SectionData {
   id: string
   title: string
   description: string
-  icon: any
+  iconName: string  // ✅ Cambiato da 'icon' a 'iconName'
   completed: boolean
   fields: { [key: string]: string }
 }
@@ -27,13 +27,37 @@ export default function BusinessPlanGenerator() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
 
+  // ✅ SOLUZIONE: Mappa icone con rendering esplicito
+  const getIcon = (iconName: string, className: string) => {
+    switch (iconName) {
+      case 'Building':
+        return <Building className={className} />
+      case 'BarChart3':
+        return <BarChart3 className={className} />
+      case 'Target':
+        return <Target className={className} />
+      case 'Lightbulb':
+        return <Lightbulb className={className} />
+      case 'TrendingUp':
+        return <TrendingUp className={className} />
+      case 'Users':
+        return <Users className={className} />
+      case 'DollarSign':
+        return <DollarSign className={className} />
+      case 'Calendar':
+        return <Calendar className={className} />
+      default:
+        return <FileText className={className} />
+    }
+  }
+
   // Business Plan Sections
   const sections: SectionData[] = [
     {
       id: 'executive-summary',
       title: 'Executive Summary',
       description: 'Panoramica generale del business plan',
-      icon: Building,
+      iconName: 'Building',  // ✅ String invece di componente
       completed: false,
       fields: {
         companyName: '',
@@ -50,7 +74,7 @@ export default function BusinessPlanGenerator() {
       id: 'company-description',
       title: 'Descrizione Azienda',
       description: 'Storia, struttura e obiettivi dell\'azienda',
-      icon: Building,
+      iconName: 'Building',
       completed: false,
       fields: {
         companyHistory: '',
@@ -66,7 +90,7 @@ export default function BusinessPlanGenerator() {
       id: 'market-analysis',
       title: 'Analisi di Mercato',
       description: 'Ricerca di mercato e analisi competitiva',
-      icon: BarChart3,
+      iconName: 'BarChart3',
       completed: false,
       fields: {
         industryOverview: '',
@@ -82,7 +106,7 @@ export default function BusinessPlanGenerator() {
       id: 'competitive-analysis',
       title: 'Analisi Competitiva',
       description: 'Concorrenti e posizionamento competitivo',
-      icon: Target,
+      iconName: 'Target',
       completed: false,
       fields: {
         directCompetitors: '',
@@ -98,7 +122,7 @@ export default function BusinessPlanGenerator() {
       id: 'products-services',
       title: 'Prodotti e Servizi',
       description: 'Descrizione dettagliata dell\'offerta',
-      icon: Lightbulb,
+      iconName: 'Lightbulb',
       completed: false,
       fields: {
         productDescription: '',
@@ -114,7 +138,7 @@ export default function BusinessPlanGenerator() {
       id: 'marketing-sales',
       title: 'Marketing e Vendite',
       description: 'Strategia di marketing e piano vendite',
-      icon: TrendingUp,
+      iconName: 'TrendingUp',
       completed: false,
       fields: {
         marketingStrategy: '',
@@ -130,7 +154,7 @@ export default function BusinessPlanGenerator() {
       id: 'team-management',
       title: 'Team e Management',
       description: 'Struttura organizzativa e team chiave',
-      icon: Users,
+      iconName: 'Users',
       completed: false,
       fields: {
         founders: '',
@@ -146,7 +170,7 @@ export default function BusinessPlanGenerator() {
       id: 'financial-projections',
       title: 'Proiezioni Finanziarie',
       description: 'Previsioni finanziarie e analisi economica',
-      icon: DollarSign,
+      iconName: 'DollarSign',
       completed: false,
       fields: {
         revenueProjections: '',
@@ -162,7 +186,7 @@ export default function BusinessPlanGenerator() {
       id: 'implementation',
       title: 'Piano di Implementazione',
       description: 'Timeline e milestone di esecuzione',
-      icon: Calendar,
+      iconName: 'Calendar',
       completed: false,
       fields: {
         implementationTimeline: '',
@@ -179,30 +203,34 @@ export default function BusinessPlanGenerator() {
   const [sectionData, setSectionData] = useState<SectionData[]>(sections)
 
   useEffect(() => {
-    // Load saved data from localStorage
-    const savedData = localStorage.getItem('upstarter-business-plan')
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData)
-        setSectionData(parsed.sections || sections)
-        setCurrentSection(parsed.currentSection || 0)
-        if (parsed.lastSaved) {
-          setLastSaved(new Date(parsed.lastSaved))
+    // Load saved data from localStorage only in browser environment
+    if (typeof window !== 'undefined') {
+      const savedData = localStorage.getItem('upstarter-business-plan')
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData)
+          setSectionData(parsed.sections || sections)
+          setCurrentSection(parsed.currentSection || 0)
+          if (parsed.lastSaved) {
+            setLastSaved(new Date(parsed.lastSaved))
+          }
+        } catch (error) {
+          console.error('Error loading saved business plan:', error)
         }
-      } catch (error) {
-        console.error('Error loading saved business plan:', error)
       }
     }
   }, [])
 
   const saveToLocalStorage = () => {
-    const dataToSave = {
-      sections: sectionData,
-      currentSection,
-      lastSaved: new Date().toISOString()
+    if (typeof window !== 'undefined') {
+      const dataToSave = {
+        sections: sectionData,
+        currentSection,
+        lastSaved: new Date().toISOString()
+      }
+      localStorage.setItem('upstarter-business-plan', JSON.stringify(dataToSave))
+      setLastSaved(new Date())
     }
-    localStorage.setItem('upstarter-business-plan', JSON.stringify(dataToSave))
-    setLastSaved(new Date())
   }
 
   const updateSectionField = (sectionIndex: number, field: string, value: string) => {
@@ -425,7 +453,8 @@ export default function BusinessPlanGenerator() {
                       {section.completed ? (
                         <CheckCircle className="w-4 h-4" />
                       ) : (
-                        <section.icon className="w-4 h-4" />
+                        // ✅ SOLUZIONE: Usa la funzione helper invece di accesso diretto
+                        getIcon(section.iconName, "w-4 h-4")
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -456,7 +485,8 @@ export default function BusinessPlanGenerator() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <currentSectionData.icon className="w-5 h-5 text-purple-600" />
+                      {/* ✅ SOLUZIONE: Usa la funzione helper */}
+                      {getIcon(currentSectionData.iconName, "w-5 h-5 text-purple-600")}
                     </div>
                     <div>
                       <h1 className="text-xl font-semibold text-gray-900">
@@ -544,7 +574,8 @@ export default function BusinessPlanGenerator() {
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6 mb-6 min-h-[200px]">
                 <div className="text-center">
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <currentSectionData.icon className="w-6 h-6 text-purple-600" />
+                    {/* ✅ SOLUZIONE: Usa la funzione helper */}
+                    {getIcon(currentSectionData.iconName, "w-6 h-6 text-purple-600")}
                   </div>
                   <h4 className="font-semibold text-gray-900 mb-2">{currentSectionData.title}</h4>
                   <div className="space-y-2 text-sm text-gray-600">
