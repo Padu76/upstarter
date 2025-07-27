@@ -409,41 +409,37 @@ export default function BusinessPlanGenerator() {
               </div>
               
               <div className="space-y-2">
-                {sectionData.map((section, index) => {
-                  // CORREZIONE: Assegna l'icona a una variabile prima di usarla
-                  const IconComponent = section.icon
-                  return (
-                    <button
-                      key={section.id}
-                      onClick={() => setCurrentSection(index)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
-                        index === currentSection
-                          ? 'bg-purple-50 border border-purple-200 text-purple-900'
-                          : 'hover:bg-gray-50 text-gray-700'
-                      }`}
-                    >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        section.completed 
-                          ? 'bg-green-100 text-green-600' 
-                          : index === currentSection
-                          ? 'bg-purple-100 text-purple-600'
-                          : 'bg-gray-100 text-gray-400'
-                      }`}>
-                        {section.completed ? (
-                          <CheckCircle className="w-4 h-4" />
-                        ) : (
-                          <IconComponent className="w-4 h-4" />
-                        )}
+                {sectionData.map((section, index) => (
+                  <button
+                    key={section.id}
+                    onClick={() => setCurrentSection(index)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
+                      index === currentSection
+                        ? 'bg-purple-50 border border-purple-200 text-purple-900'
+                        : 'hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      section.completed 
+                        ? 'bg-green-100 text-green-600' 
+                        : index === currentSection
+                        ? 'bg-purple-100 text-purple-600'
+                        : 'bg-gray-100 text-gray-400'
+                    }`}>
+                      {section.completed ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        <section.icon className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{section.title}</div>
+                      <div className="text-xs text-gray-500">
+                        {index + 1} di {sectionData.length}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{section.title}</div>
-                        <div className="text-xs text-gray-500">
-                          {index + 1} di {sectionData.length}
-                        </div>
-                      </div>
-                    </button>
-                  )
-                })}
+                    </div>
+                  </button>
+                ))}
               </div>
 
               {lastSaved && (
@@ -464,11 +460,7 @@ export default function BusinessPlanGenerator() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      {/* CORREZIONE: Assegna l'icona a una variabile prima di usarla */}
-                      {(() => {
-                        const CurrentIcon = currentSectionData.icon
-                        return <CurrentIcon className="w-5 h-5 text-purple-600" />
-                      })()}
+                      <currentSectionData.icon className="w-5 h-5 text-purple-600" />
                     </div>
                     <div>
                       <h1 className="text-xl font-semibold text-gray-900">
@@ -556,11 +548,7 @@ export default function BusinessPlanGenerator() {
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6 mb-6 min-h-[200px]">
                 <div className="text-center">
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    {/* CORREZIONE: Assegna l'icona a una variabile prima di usarla */}
-                    {(() => {
-                      const PreviewIcon = currentSectionData.icon
-                      return <PreviewIcon className="w-6 h-6 text-purple-600" />
-                    })()}
+                    <currentSectionData.icon className="w-6 h-6 text-purple-600" />
                   </div>
                   <h4 className="font-semibold text-gray-900 mb-2">{currentSectionData.title}</h4>
                   <div className="space-y-2 text-sm text-gray-600">
