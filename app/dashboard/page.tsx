@@ -290,7 +290,7 @@ export default function DashboardMain() {
                 Esplora i Moduli
               </Link>
               <Link
-                href="/dashboard/financial-planning/business-plan"
+                href="/dashboard/financial-planning/business-plan-generator"
                 className="flex items-center gap-2 border-2 border-white text-white px-6 py-3 rounded-lg hover:bg-white hover:text-emerald-600 transition-colors font-semibold"
               >
                 <FileText className="w-5 h-5" />
@@ -432,7 +432,7 @@ export default function DashboardMain() {
             <h3 className="font-semibold text-gray-900 mb-4">Financial Planning</h3>
             <div className="space-y-3">
               <Link 
-                href="/dashboard/financial-planning/business-plan"
+                href="/dashboard/financial-planning/business-plan-generator"
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
