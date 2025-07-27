@@ -180,33 +180,29 @@ export default function BusinessPlanGenerator() {
 
   useEffect(() => {
     // Load saved data from localStorage
-    if (typeof window !== 'undefined') {
-      const savedData = localStorage.getItem('upstarter-business-plan')
-      if (savedData) {
-        try {
-          const parsed = JSON.parse(savedData)
-          setSectionData(parsed.sections || sections)
-          setCurrentSection(parsed.currentSection || 0)
-          if (parsed.lastSaved) {
-            setLastSaved(new Date(parsed.lastSaved))
-          }
-        } catch (error) {
-          console.error('Error loading saved business plan:', error)
+    const savedData = localStorage.getItem('upstarter-business-plan')
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData)
+        setSectionData(parsed.sections || sections)
+        setCurrentSection(parsed.currentSection || 0)
+        if (parsed.lastSaved) {
+          setLastSaved(new Date(parsed.lastSaved))
         }
+      } catch (error) {
+        console.error('Error loading saved business plan:', error)
       }
     }
   }, [])
 
   const saveToLocalStorage = () => {
-    if (typeof window !== 'undefined') {
-      const dataToSave = {
-        sections: sectionData,
-        currentSection,
-        lastSaved: new Date().toISOString()
-      }
-      localStorage.setItem('upstarter-business-plan', JSON.stringify(dataToSave))
-      setLastSaved(new Date())
+    const dataToSave = {
+      sections: sectionData,
+      currentSection,
+      lastSaved: new Date().toISOString()
     }
+    localStorage.setItem('upstarter-business-plan', JSON.stringify(dataToSave))
+    setLastSaved(new Date())
   }
 
   const updateSectionField = (sectionIndex: number, field: string, value: string) => {
