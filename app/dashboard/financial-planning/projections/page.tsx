@@ -15,7 +15,7 @@ interface ProjectionData {
   id: string
   title: string
   description: string
-  icon: any
+  iconName: string  // ✅ Cambiato da 'icon' a 'iconName'
   completed: boolean
   fields: { [key: string]: string | number }
 }
@@ -28,13 +28,31 @@ export default function FinancialProjectionsWizard() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [projectionData, setProjectionData] = useState<any[]>([])
 
+  // ✅ SOLUZIONE: Mappa icone con rendering esplicito
+  const getIcon = (iconName: string, className: string) => {
+    switch (iconName) {
+      case 'Target':
+        return <Target className={className} />
+      case 'DollarSign':
+        return <DollarSign className={className} />
+      case 'Calculator':
+        return <Calculator className={className} />
+      case 'TrendingUp':
+        return <TrendingUp className={className} />
+      case 'BarChart3':
+        return <BarChart3 className={className} />
+      default:
+        return <FileText className={className} />
+    }
+  }
+
   // Financial Projections Sections
   const sections: ProjectionData[] = [
     {
       id: 'business-model',
       title: 'Modello di Business',
       description: 'Definisci il tuo modello di revenue e unit economics',
-      icon: Target,
+      iconName: 'Target',  // ✅ String invece di componente
       completed: false,
       fields: {
         businessType: '',
@@ -51,7 +69,7 @@ export default function FinancialProjectionsWizard() {
       id: 'revenue-assumptions',
       title: 'Assunzioni Revenue',
       description: 'Parametri chiave per le proiezioni di ricavi',
-      icon: DollarSign,
+      iconName: 'DollarSign',
       completed: false,
       fields: {
         launchMonth: 1,
@@ -68,7 +86,7 @@ export default function FinancialProjectionsWizard() {
       id: 'cost-structure',
       title: 'Struttura Costi',
       description: 'Costi fissi, variabili e investimenti',
-      icon: Calculator,
+      iconName: 'Calculator',
       completed: false,
       fields: {
         fixedCostsMonthly: 0,
@@ -85,7 +103,7 @@ export default function FinancialProjectionsWizard() {
       id: 'growth-scenarios',
       title: 'Scenari di Crescita',
       description: 'Modella diversi scenari di crescita',
-      icon: TrendingUp,
+      iconName: 'TrendingUp',
       completed: false,
       fields: {
         conservativeGrowth: 0,
@@ -101,7 +119,7 @@ export default function FinancialProjectionsWizard() {
       id: 'funding-needs',
       title: 'Fabbisogno Finanziario',
       description: 'Calcola il funding necessario e runway',
-      icon: BarChart3,
+      iconName: 'BarChart3',
       completed: false,
       fields: {
         initialInvestment: 0,
@@ -370,7 +388,8 @@ export default function FinancialProjectionsWizard() {
                       {section.completed ? (
                         <CheckCircle className="w-4 h-4" />
                       ) : (
-                        <section.icon className="w-4 h-4" />
+                        // ✅ SOLUZIONE: Usa la funzione helper invece di accesso diretto
+                        getIcon(section.iconName, "w-4 h-4")
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -424,7 +443,8 @@ export default function FinancialProjectionsWizard() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <currentSectionData.icon className="w-5 h-5 text-green-600" />
+                      {/* ✅ SOLUZIONE: Usa la funzione helper */}
+                      {getIcon(currentSectionData.iconName, "w-5 h-5 text-green-600")}
                     </div>
                     <div>
                       <h1 className="text-xl font-semibold text-gray-900">
