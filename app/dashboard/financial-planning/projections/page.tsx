@@ -118,18 +118,20 @@ export default function FinancialProjectionsWizard() {
   const [sectionData, setSectionData] = useState<ProjectionData[]>(sections)
 
   useEffect(() => {
-    // Load saved data from localStorage
-    const savedData = localStorage.getItem('upstarter-financial-projections')
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData)
-        setSectionData(parsed.sections || sections)
-        setCurrentSection(parsed.currentSection || 0)
-        if (parsed.lastSaved) {
-          setLastSaved(new Date(parsed.lastSaved))
+    // Load saved data from localStorage only in browser
+    if (typeof window !== 'undefined') {
+      const savedData = localStorage.getItem('upstarter-financial-projections')
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData)
+          setSectionData(parsed.sections || sections)
+          setCurrentSection(parsed.currentSection || 0)
+          if (parsed.lastSaved) {
+            setLastSaved(new Date(parsed.lastSaved))
+          }
+        } catch (error) {
+          console.error('Error loading saved projections:', error)
         }
-      } catch (error) {
-        console.error('Error loading saved projections:', error)
       }
     }
     
@@ -165,13 +167,15 @@ export default function FinancialProjectionsWizard() {
   }
 
   const saveToLocalStorage = () => {
-    const dataToSave = {
-      sections: sectionData,
-      currentSection,
-      lastSaved: new Date().toISOString()
+    if (typeof window !== 'undefined') {
+      const dataToSave = {
+        sections: sectionData,
+        currentSection,
+        lastSaved: new Date().toISOString()
+      }
+      localStorage.setItem('upstarter-financial-projections', JSON.stringify(dataToSave))
+      setLastSaved(new Date())
     }
-    localStorage.setItem('upstarter-financial-projections', JSON.stringify(dataToSave))
-    setLastSaved(new Date())
   }
 
   const updateSectionField = (sectionIndex: number, field: string, value: string | number) => {
@@ -346,37 +350,41 @@ export default function FinancialProjectionsWizard() {
               </div>
               
               <div className="space-y-2">
-                {sectionData.map((section, index) => (
-                  <button
-                    key={section.id}
-                    onClick={() => setCurrentSection(index)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
-                      index === currentSection
-                        ? 'bg-green-50 border border-green-200 text-green-900'
-                        : 'hover:bg-gray-50 text-gray-700'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      section.completed 
-                        ? 'bg-green-100 text-green-600' 
-                        : index === currentSection
-                        ? 'bg-green-100 text-green-600'
-                        : 'bg-gray-100 text-gray-400'
-                    }`}>
-                      {section.completed ? (
-                        <CheckCircle className="w-4 h-4" />
-                      ) : (
-                        <section.icon className="w-4 h-4" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{section.title}</div>
-                      <div className="text-xs text-gray-500">
-                        {index + 1} di {sectionData.length}
+                {sectionData.map((section, index) => {
+                  // ✅ FIX: Assegna l'icona a una variabile componente
+                  const IconComponent = section.icon
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => setCurrentSection(index)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
+                        index === currentSection
+                          ? 'bg-green-50 border border-green-200 text-green-900'
+                          : 'hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        section.completed 
+                          ? 'bg-green-100 text-green-600' 
+                          : index === currentSection
+                          ? 'bg-green-100 text-green-600'
+                          : 'bg-gray-100 text-gray-400'
+                      }`}>
+                        {section.completed ? (
+                          <CheckCircle className="w-4 h-4" />
+                        ) : (
+                          <IconComponent className="w-4 h-4" />
+                        )}
                       </div>
-                    </div>
-                  </button>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{section.title}</div>
+                        <div className="text-xs text-gray-500">
+                          {index + 1} di {sectionData.length}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
 
               {/* Key Metrics */}
@@ -420,7 +428,11 @@ export default function FinancialProjectionsWizard() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <currentSectionData.icon className="w-5 h-5 text-green-600" />
+                      {/* ✅ FIX: Usa la stessa sintassi corretta */}
+                      {(() => {
+                        const CurrentIcon = currentSectionData.icon
+                        return <CurrentIcon className="w-5 h-5 text-green-600" />
+                      })()}
                     </div>
                     <div>
                       <h1 className="text-xl font-semibold text-gray-900">
