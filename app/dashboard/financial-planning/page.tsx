@@ -14,7 +14,7 @@ export default function FinancialPlanningPage() {
 
   const modules = [
     {
-      id: 'business-plan',
+      id: 'business-plan-generator',
       title: 'Business Plan Generator',
       description: 'Crea business plan professionali collegati alle tue analisi esistenti',
       icon: FileText,
@@ -26,7 +26,7 @@ export default function FinancialPlanningPage() {
         'Export PDF professionale'
       ],
       color: 'blue',
-      href: '/dashboard/financial-planning/business-plan',
+      href: '/dashboard/financial-planning/business-plan-generator',
       isReady: true
     },
     {
@@ -184,7 +184,7 @@ export default function FinancialPlanningPage() {
                 Esplora i Moduli
               </Link>
               <Link
-                href="/dashboard/financial-planning/business-plan"
+                href="/dashboard/financial-planning/business-plan-generator"
                 className="flex items-center justify-center gap-2 border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-purple-600 transition-colors text-lg font-semibold"
               >
                 Inizia Subito
@@ -420,7 +420,7 @@ export default function FinancialPlanningPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/dashboard/financial-planning/business-plan"
+              href="/dashboard/financial-planning/business-plan-generator"
               className="flex items-center justify-center gap-2 bg-white text-purple-600 px-8 py-4 rounded-lg hover:bg-purple-50 transition-colors text-lg font-semibold"
             >
               <FileText className="w-5 h-5" />
