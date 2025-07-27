@@ -8,16 +8,29 @@ import {
   ArrowLeft, ArrowRight, CheckCircle, TrendingUp, 
   Download, Save, RefreshCw, Wand2, Eye, Calculator,
   DollarSign, BarChart3, Target, Calendar, AlertTriangle,
-  Info, Lightbulb, FileText, PieChart, Activity
+  Info, Lightbulb, FileText, PieChart, Activity, HelpCircle
 } from 'lucide-react'
 
 interface ProjectionData {
   id: string
   title: string
   description: string
-  iconName: string  // ✅ Cambiato da 'icon' a 'iconName'
+  iconName: string
   completed: boolean
   fields: { [key: string]: string | number }
+}
+
+interface FieldConfig {
+  label: string
+  description: string
+  type: 'select' | 'number' | 'text'
+  options?: string[]
+  placeholder?: string
+  suffix?: string
+  min?: number
+  max?: number
+  step?: number
+  tip?: string
 }
 
 export default function FinancialProjectionsWizard() {
@@ -27,8 +40,8 @@ export default function FinancialProjectionsWizard() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [projectionData, setProjectionData] = useState<any[]>([])
+  const [showHelp, setShowHelp] = useState<string | null>(null)
 
-  // ✅ SOLUZIONE: Mappa icone con rendering esplicito
   const getIcon = (iconName: string, className: string) => {
     switch (iconName) {
       case 'Target':
@@ -46,13 +59,261 @@ export default function FinancialProjectionsWizard() {
     }
   }
 
+  // Configurazione campi guidata
+  const fieldConfigs: { [key: string]: { [key: string]: FieldConfig } } = {
+    'business-model': {
+      businessType: {
+        label: 'Tipo di Business',
+        description: 'Seleziona il modello di business che meglio descrive la tua startup',
+        type: 'select',
+        options: ['SaaS B2B', 'SaaS B2C', 'E-commerce', 'Marketplace', 'App Mobile', 'Servizi Professionali', 'Prodotto Fisico', 'Piattaforma'],
+        tip: 'Il tipo di business influenza tutte le metriche successive. Scegli quello più simile al tuo modello.'
+      },
+      revenueModel: {
+        label: 'Modello di Revenue',
+        description: 'Come generi ricavi dalla tua attività',
+        type: 'select',
+        options: ['Subscription mensile', 'Subscription annuale', 'Freemium + Premium', 'Commission per transazione', 'One-time payment', 'Advertising', 'Licensing', 'Misto'],
+        tip: 'I modelli ricorrenti (subscription) sono più attraenti per gli investitori perché garantiscono prevedibilità.'
+      },
+      customerSegments: {
+        label: 'Segmenti Clienti',
+        description: 'Chi sono i tuoi clienti target principali',
+        type: 'select',
+        options: ['PMI (10-50 dipendenti)', 'Aziende medie (50-250 dipendenti)', 'Enterprise (250+ dipendenti)', 'Consumatori giovani (18-35)', 'Consumatori adulti (35-55)', 'Professionisti', 'Freelancer', 'Startup'],
+        tip: 'Definire chiaramente il target aiuta a calcolare CAC e LTV più accurati.'
+      },
+      pricingStrategy: {
+        label: 'Strategia Pricing',
+        description: 'Come strutturi i prezzi dei tuoi prodotti/servizi',
+        type: 'select',
+        options: ['Freemium (base gratis + premium)', 'Tiered pricing (3 piani)', 'Usage-based (pay per use)', 'Flat rate (prezzo fisso)', 'Custom enterprise', 'Commission-based'],
+        tip: 'Il freemium funziona bene per SaaS, mentre l\'usage-based è ideale per API e servizi scalabili.'
+      },
+      averageOrderValue: {
+        label: 'Valore Medio Ordine',
+        description: 'Quanto spende in media un cliente per acquisto/mese',
+        type: 'number',
+        placeholder: '2400',
+        suffix: '€',
+        min: 1,
+        max: 100000,
+        step: 10,
+        tip: 'Per subscription: prezzo mensile. Per one-time: valore medio transazione. Sii realistico basandoti su competitor.'
+      },
+      customerAcquisitionCost: {
+        label: 'Costo Acquisizione Cliente (CAC)',
+        description: 'Quanto costa acquisire un nuovo cliente (marketing + sales)',
+        type: 'number',
+        placeholder: '350',
+        suffix: '€',
+        min: 1,
+        max: 50000,
+        step: 10,
+        tip: 'Include costi marketing, sales, onboarding. Regola generale: CAC dovrebbe essere < 1/3 del LTV.'
+      },
+      customerLifetimeValue: {
+        label: 'Lifetime Value Cliente (LTV)',
+        description: 'Valore totale che un cliente genera durante la relazione',
+        type: 'number',
+        placeholder: '12000',
+        suffix: '€',
+        min: 1,
+        max: 500000,
+        step: 100,
+        tip: 'Per subscription: (Prezzo mensile × Mesi di retention). Rapporto LTV/CAC dovrebbe essere > 3:1.'
+      },
+      monthlyChurnRate: {
+        label: 'Tasso Abbandono Mensile',
+        description: 'Percentuale clienti che smettono di usare il servizio ogni mese',
+        type: 'number',
+        placeholder: '5',
+        suffix: '%',
+        min: 0,
+        max: 50,
+        step: 0.5,
+        tip: 'SaaS B2B: 2-7%. SaaS B2C: 5-15%. Più basso è, meglio è per la crescita sostenibile.'
+      }
+    },
+    'revenue-assumptions': {
+      launchMonth: {
+        label: 'Mese di Lancio',
+        description: 'In quale mese inizierai a generare i primi ricavi',
+        type: 'select',
+        options: ['Mese 1 (subito)', 'Mese 2', 'Mese 3', 'Mese 4', 'Mese 5', 'Mese 6'],
+        tip: 'Considera il tempo necessario per completare MVP, primi test e acquisire i primi clienti.'
+      },
+      initialCustomers: {
+        label: 'Clienti Iniziali',
+        description: 'Numero di clienti paganti che prevedi di avere al lancio',
+        type: 'number',
+        placeholder: '25',
+        min: 0,
+        max: 1000,
+        step: 1,
+        tip: 'Include beta tester, early adopters, pre-order. Sii conservativo ma realistico.'
+      },
+      monthlyGrowthRate: {
+        label: 'Crescita Mensile',
+        description: 'Percentuale di crescita clienti prevista ogni mese',
+        type: 'number',
+        placeholder: '15',
+        suffix: '%',
+        min: 0,
+        max: 100,
+        step: 1,
+        tip: 'Startups tipiche: 5-20% mensile. 15% mensile = 435% crescita annua. Sii realistico!'
+      },
+      seasonalityFactor: {
+        label: 'Fattore Stagionalità',
+        description: 'Variazione stagionale del business (0 = stabile, >0 = stagionale)',
+        type: 'number',
+        placeholder: '10',
+        suffix: '%',
+        min: 0,
+        max: 50,
+        step: 5,
+        tip: 'E-commerce: alta stagionalità. B2B software: bassa stagionalità. Considera il tuo settore.'
+      },
+      priceGrowthRate: {
+        label: 'Crescita Prezzi Annua',
+        description: 'Aumento prezzi annuale previsto (inflation + value)',
+        type: 'number',
+        placeholder: '8',
+        suffix: '%',
+        min: 0,
+        max: 30,
+        step: 1,
+        tip: 'Include inflazione (3-5%) + aumento valore prodotto. SaaS tipicamente 5-15% annuo.'
+      },
+      marketSaturation: {
+        label: 'Saturazione Mercato',
+        description: 'Numero massimo clienti raggiungibili nel tuo mercato',
+        type: 'number',
+        placeholder: '10000',
+        min: 100,
+        max: 10000000,
+        step: 100,
+        tip: 'TAM/prezzo medio. Esempio: mercato €10M, prezzo €1000 = 10K clienti max.'
+      },
+      conversionRate: {
+        label: 'Tasso Conversione',
+        description: 'Percentuale visitatori/lead che diventano clienti paganti',
+        type: 'number',
+        placeholder: '12',
+        suffix: '%',
+        min: 0.1,
+        max: 50,
+        step: 0.1,
+        tip: 'SaaS B2B: 10-20%. E-commerce: 2-5%. Freemium: 1-5%. Dipende dal settore e prezzo.'
+      },
+      retentionRate: {
+        label: 'Tasso Retention',
+        description: 'Percentuale clienti che rimangono attivi ogni mese',
+        type: 'number',
+        placeholder: '90',
+        suffix: '%',
+        min: 50,
+        max: 99,
+        step: 1,
+        tip: 'Opposto del churn rate. 90% retention = 10% churn. Obiettivo: >85% per SaaS B2B.'
+      }
+    },
+    'cost-structure': {
+      fixedCostsMonthly: {
+        label: 'Costi Fissi Mensili',
+        description: 'Costi che sostieni ogni mese indipendentemente dalle vendite',
+        type: 'number',
+        placeholder: '15000',
+        suffix: '€',
+        min: 0,
+        max: 1000000,
+        step: 100,
+        tip: 'Include: affitti, stipendi base, software, assicurazioni. Costi che hai anche con 0 clienti.'
+      },
+      variableCostPercentage: {
+        label: 'Costi Variabili',
+        description: 'Percentuale dei ricavi spesa in costi variabili (COGS)',
+        type: 'number',
+        placeholder: '35',
+        suffix: '%',
+        min: 0,
+        max: 80,
+        step: 1,
+        tip: 'SaaS: 10-30%. E-commerce: 40-70%. Include: hosting, payment fees, produzione, shipping.'
+      },
+      salariesMonthly: {
+        label: 'Stipendi Mensili',
+        description: 'Costo totale stipendi team per mese',
+        type: 'number',
+        placeholder: '45000',
+        suffix: '€',
+        min: 0,
+        max: 2000000,
+        step: 1000,
+        tip: 'Include stipendi, contributi, benefit. Pianifica crescita team nei prossimi 3 anni.'
+      },
+      marketingBudget: {
+        label: 'Budget Marketing',
+        description: 'Spesa mensile per marketing e acquisizione clienti',
+        type: 'number',
+        placeholder: '8000',
+        suffix: '€',
+        min: 0,
+        max: 500000,
+        step: 100,
+        tip: 'Regola generale: 15-25% dei ricavi. Include: advertising, content, events, PR.'
+      },
+      technologyCosts: {
+        label: 'Costi Tecnologia',
+        description: 'Spesa mensile per infrastruttura e software',
+        type: 'number',
+        placeholder: '3500',
+        suffix: '€',
+        min: 0,
+        max: 100000,
+        step: 50,
+        tip: 'Include: cloud hosting, software licenses, API costs, security, backup.'
+      },
+      operationalCosts: {
+        label: 'Costi Operativi',
+        description: 'Altri costi operativi mensili (amministrazione, legale, ecc.)',
+        type: 'number',
+        placeholder: '2500',
+        suffix: '€',
+        min: 0,
+        max: 100000,
+        step: 50,
+        tip: 'Include: commercialista, avvocato, assicurazioni, utilities, travel.'
+      },
+      oneTimeInvestments: {
+        label: 'Investimenti Una Tantum',
+        description: 'Investimenti iniziali necessari per partire',
+        type: 'number',
+        placeholder: '150000',
+        suffix: '€',
+        min: 0,
+        max: 10000000,
+        step: 1000,
+        tip: 'Include: sviluppo MVP, setup iniziale, attrezzature, inventory iniziale.'
+      },
+      hirePlan: {
+        label: 'Piano Assunzioni',
+        description: 'Quando e chi assumerai nei prossimi 24 mesi',
+        type: 'text',
+        placeholder: '2 sviluppatori Q1, 1 sales Q2, 1 marketing Q3',
+        tip: 'Pianifica le assunzioni chiave che ti serviranno per crescere. Sii specifico sui ruoli e tempistiche.'
+      }
+    }
+  }
+
   // Financial Projections Sections
   const sections: ProjectionData[] = [
     {
       id: 'business-model',
       title: 'Modello di Business',
       description: 'Definisci il tuo modello di revenue e unit economics',
-      iconName: 'Target',  // ✅ String invece di componente
+      iconName: 'Target',
       completed: false,
       fields: {
         businessType: '',
@@ -136,7 +397,6 @@ export default function FinancialProjectionsWizard() {
   const [sectionData, setSectionData] = useState<ProjectionData[]>(sections)
 
   useEffect(() => {
-    // Load saved data from localStorage only in browser environment
     if (typeof window !== 'undefined') {
       const savedData = localStorage.getItem('upstarter-financial-projections')
       if (savedData) {
@@ -152,21 +412,18 @@ export default function FinancialProjectionsWizard() {
         }
       }
     }
-    
-    // Generate sample projection data
     generateProjectionCharts()
   }, [])
 
   const generateProjectionCharts = () => {
-    // Generate 36 months of projection data
     const months: any[] = []
     const baseRevenue = 10000
     const growthRate = 0.15
     
     for (let i = 0; i < 36; i++) {
       const month = i + 1
-      const revenue = baseRevenue * Math.pow(1 + growthRate, i) * (1 + 0.1 * Math.sin(i * 0.5)) // Add seasonality
-      const costs = revenue * 0.6 + 15000 // Variable costs + fixed costs
+      const revenue = baseRevenue * Math.pow(1 + growthRate, i) * (1 + 0.1 * Math.sin(i * 0.5))
+      const costs = revenue * 0.6 + 15000
       const profit = revenue - costs
       
       months.push({
@@ -200,19 +457,17 @@ export default function FinancialProjectionsWizard() {
     const newSectionData = [...sectionData]
     newSectionData[sectionIndex].fields[field] = value
     
-    // Check if section is completed
     const requiredFields = Object.keys(newSectionData[sectionIndex].fields).filter(f => 
       typeof newSectionData[sectionIndex].fields[f] === 'number' ? 
       newSectionData[sectionIndex].fields[f] > 0 : 
       String(newSectionData[sectionIndex].fields[f]).trim() !== ''
     )
     const totalFields = Object.keys(newSectionData[sectionIndex].fields).length
-    newSectionData[sectionIndex].completed = requiredFields.length >= Math.ceil(totalFields * 0.7) // 70% completion
+    newSectionData[sectionIndex].completed = requiredFields.length >= Math.ceil(totalFields * 0.7)
     
     setSectionData(newSectionData)
     
-    // Regenerate charts with new data
-    if (sectionIndex <= 2) { // If core financial data changed
+    if (sectionIndex <= 2) {
       generateProjectionCharts()
     }
     
@@ -229,16 +484,16 @@ export default function FinancialProjectionsWizard() {
       const mockContent: { [key: string]: { [key: string]: string | number } } = {
         'business-model': {
           businessType: 'SaaS B2B',
-          revenueModel: 'Subscription ricorrente + setup fees',
-          customerSegments: 'PMI 50-500 dipendenti settore manifatturiero',
-          pricingStrategy: 'Freemium con piani Pro/Enterprise',
+          revenueModel: 'Subscription mensile',
+          customerSegments: 'PMI (10-50 dipendenti)',
+          pricingStrategy: 'Freemium (base gratis + premium)',
           averageOrderValue: 2400,
           customerAcquisitionCost: 350,
           customerLifetimeValue: 12000,
           monthlyChurnRate: 5
         },
         'revenue-assumptions': {
-          launchMonth: 3,
+          launchMonth: 'Mese 3',
           initialCustomers: 25,
           monthlyGrowthRate: 15,
           seasonalityFactor: 10,
@@ -285,15 +540,11 @@ export default function FinancialProjectionsWizard() {
   const progressPercentage = (completedSections / sectionData.length) * 100
 
   const exportProjections = () => {
-    const link = document.createElement('a')
-    link.href = '#'
-    link.download = 'financial-projections.xlsx'
-    link.click()
-    
     alert('Proiezioni Finanziarie esportate in Excel!')
   }
 
   const currentSectionData = sectionData[currentSection]
+  const currentFieldConfigs = fieldConfigs[currentSectionData.id] || {}
 
   // Calculate key metrics
   const breakEvenMonth = projectionData.find(m => m.cumulativeProfit > 0)?.monthNumber || 36
@@ -301,7 +552,6 @@ export default function FinancialProjectionsWizard() {
   const yearOneRevenue = projectionData.slice(0, 12).reduce((sum, m) => sum + m.revenue, 0)
   const yearThreeRevenue = projectionData.slice(24, 36).reduce((sum, m) => sum + m.revenue, 0)
 
-  // Generate simple chart data for visualization
   const chartData = projectionData.slice(0, 24)
   const maxRevenue = Math.max(...chartData.map(m => m.revenue))
   const maxCosts = Math.max(...chartData.map(m => m.costs))
@@ -364,7 +614,7 @@ export default function FinancialProjectionsWizard() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
               <div className="flex items-center gap-2 mb-6">
                 <TrendingUp className="w-5 h-5 text-green-600" />
-                <h2 className="font-semibold text-gray-900">Sezioni</h2>
+                <h2 className="font-semibold text-gray-900">Wizard Guidato</h2>
               </div>
               
               <div className="space-y-2">
@@ -388,14 +638,13 @@ export default function FinancialProjectionsWizard() {
                       {section.completed ? (
                         <CheckCircle className="w-4 h-4" />
                       ) : (
-                        // ✅ SOLUZIONE: Usa la funzione helper invece di accesso diretto
                         getIcon(section.iconName, "w-4 h-4")
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{section.title}</div>
                       <div className="text-xs text-gray-500">
-                        {index + 1} di {sectionData.length}
+                        Passo {index + 1} di {sectionData.length}
                       </div>
                     </div>
                   </button>
@@ -404,23 +653,23 @@ export default function FinancialProjectionsWizard() {
 
               {/* Key Metrics */}
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Metriche Chiave</h3>
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Metriche Live</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Break-even:</span>
                     <span className="font-medium text-gray-900">Mese {breakEvenMonth}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Max Burn Rate:</span>
+                    <span className="text-gray-600">Max Burn:</span>
                     <span className="font-medium text-red-600">€{maxBurnRate.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Revenue Anno 1:</span>
-                    <span className="font-medium text-green-600">€{yearOneRevenue.toLocaleString()}</span>
+                    <span className="text-gray-600">Revenue Y1:</span>
+                    <span className="font-medium text-green-600">€{(yearOneRevenue/1000).toFixed(0)}K</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Revenue Anno 3:</span>
-                    <span className="font-medium text-green-600">€{yearThreeRevenue.toLocaleString()}</span>
+                    <span className="text-gray-600">Revenue Y3:</span>
+                    <span className="font-medium text-green-600">€{(yearThreeRevenue/1000).toFixed(0)}K</span>
                   </div>
                 </div>
               </div>
@@ -428,14 +677,14 @@ export default function FinancialProjectionsWizard() {
               {lastSaved && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <div className="text-xs text-gray-500">
-                    Ultimo salvataggio: {lastSaved.toLocaleTimeString('it-IT')}
+                    Salvato: {lastSaved.toLocaleTimeString('it-IT')}
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Main Content - Section Editor */}
+          {/* Main Content - Guided Form */}
           <div className="lg:col-span-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               {/* Section Header */}
@@ -443,7 +692,6 @@ export default function FinancialProjectionsWizard() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      {/* ✅ SOLUZIONE: Usa la funzione helper */}
                       {getIcon(currentSectionData.iconName, "w-5 h-5 text-green-600")}
                     </div>
                     <div>
@@ -471,45 +719,85 @@ export default function FinancialProjectionsWizard() {
                 </div>
               </div>
 
-              {/* Section Content Editor */}
+              {/* Guided Form Fields */}
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {Object.entries(currentSectionData.fields).map(([field, value]) => (
-                    <div key={field} className={field === 'hirePlan' || field === 'mitigationStrategies' || field === 'useOfFunds' || field === 'milestones' || field === 'exitStrategy' ? 'md:col-span-2' : ''}>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
-                        {field.replace(/([A-Z])/g, ' $1').trim().replace(/^\w/, c => c.toUpperCase())}
-                        {typeof value === 'number' && field.includes('Rate') && <span className="text-gray-500 ml-1">(%)</span>}
-                        {typeof value === 'number' && (field.includes('Cost') || field.includes('Value') || field.includes('Budget') || field.includes('Investment')) && <span className="text-gray-500 ml-1">(€)</span>}
-                      </label>
-                      {typeof value === 'string' && (field.includes('Plan') || field.includes('Strategy') || field.includes('Risk') || field.includes('Funds') || field.includes('milestones') || field.includes('exitStrategy')) ? (
-                        <textarea
-                          value={value as string}
-                          onChange={(e) => updateSectionField(currentSection, field, e.target.value)}
-                          placeholder={`Descrivi ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}...`}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none"
-                          rows={3}
-                        />
-                      ) : typeof value === 'string' ? (
-                        <input
-                          type="text"
-                          value={value as string}
-                          onChange={(e) => updateSectionField(currentSection, field, e.target.value)}
-                          placeholder={`Inserisci ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}...`}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                        />
-                      ) : (
-                        <input
-                          type="number"
-                          value={value as number}
-                          onChange={(e) => updateSectionField(currentSection, field, parseFloat(e.target.value) || 0)}
-                          placeholder="0"
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                          min="0"
-                          step={field.includes('Rate') ? "0.1" : field.includes('Cost') ? "100" : "1"}
-                        />
-                      )}
-                    </div>
-                  ))}
+                <div className="space-y-8">
+                  {Object.entries(currentSectionData.fields).map(([field, value]) => {
+                    const config = currentFieldConfigs[field]
+                    if (!config) return null
+
+                    return (
+                      <div key={field} className="relative">
+                        <div className="flex items-center gap-2 mb-3">
+                          <label className="text-sm font-semibold text-gray-900">
+                            {config.label}
+                          </label>
+                          {config.tip && (
+                            <button
+                              onClick={() => setShowHelp(showHelp === field ? null : field)}
+                              className="text-gray-400 hover:text-blue-600 transition-colors"
+                            >
+                              <HelpCircle className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 mb-3">{config.description}</p>
+
+                        {config.type === 'select' ? (
+                          <select
+                            value={value as string}
+                            onChange={(e) => updateSectionField(currentSection, field, e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900"
+                          >
+                            <option value="">Seleziona un\'opzione...</option>
+                            {config.options?.map((option) => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </select>
+                        ) : config.type === 'number' ? (
+                          <div className="relative">
+                            <input
+                              type="number"
+                              value={value as number}
+                              onChange={(e) => updateSectionField(currentSection, field, parseFloat(e.target.value) || 0)}
+                              placeholder={config.placeholder}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors pr-12"
+                              min={config.min}
+                              max={config.max}
+                              step={config.step}
+                            />
+                            {config.suffix && (
+                              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                                {config.suffix}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            value={value as string}
+                            onChange={(e) => updateSectionField(currentSection, field, e.target.value)}
+                            placeholder={config.placeholder}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                          />
+                        )}
+
+                        {/* Help tooltip */}
+                        {showHelp === field && config.tip && (
+                          <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <Lightbulb className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <div className="text-sm font-medium text-blue-900 mb-1">Suggerimento</div>
+                                <div className="text-sm text-blue-800">{config.tip}</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
 
                 {/* Navigation Buttons */}
@@ -551,118 +839,77 @@ export default function FinancialProjectionsWizard() {
                   <TrendingUp className="w-5 h-5 text-green-600" />
                   <h3 className="font-semibold text-gray-900">Crescita Revenue</h3>
                 </div>
-                <div className="h-48 relative">
+                <div className="h-32 relative">
                   <div className="absolute inset-0 flex items-end justify-between">
-                    {chartData.slice(0, 12).map((data, index) => (
+                    {chartData.slice(0, 8).map((data, index) => (
                       <div key={index} className="flex flex-col items-center">
                         <div
-                          className="w-4 bg-green-500 rounded-t-sm"
+                          className="w-3 bg-green-500 rounded-t-sm"
                           style={{
-                            height: `${(data.revenue / maxValue) * 160}px`,
+                            height: `${(data.revenue / maxValue) * 100}px`,
                             minHeight: '4px'
                           }}
-                          title={`${data.month}: €${data.revenue.toLocaleString()}`}
                         ></div>
-                        <div className="text-xs text-gray-500 mt-1 transform -rotate-45 origin-left">
-                          {data.month}
+                        <div className="text-xs text-gray-500 mt-1">
+                          M{index + 1}
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="text-center text-sm text-gray-600 mt-2">
-                  Revenue primi 12 mesi
-                </div>
               </div>
 
-              {/* Profitability Chart */}
+              {/* Quick Insights */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <BarChart3 className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-semibold text-gray-900">Profittabilità</h3>
-                </div>
+                <h3 className="font-semibold text-gray-900 mb-4">Insights Automatici</h3>
                 <div className="space-y-3">
-                  {chartData.slice(0, 6).map((data, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <div className="w-8 text-xs text-gray-500">{data.month}</div>
-                      <div className="flex-1 bg-gray-100 rounded-full h-4 relative overflow-hidden">
-                        <div
-                          className="h-full bg-green-500 rounded-full"
-                          style={{ width: `${Math.max(5, (data.revenue / maxValue) * 100)}%` }}
-                        ></div>
-                        <div
-                          className="absolute top-0 h-full bg-red-500 rounded-full"
-                          style={{ 
-                            width: `${Math.max(3, (data.costs / maxValue) * 100)}%`,
-                            left: `${(data.revenue / maxValue) * 100}%`
-                          }}
-                        ></div>
-                      </div>
-                      <div className="w-16 text-xs text-right">
-                        <div className="text-green-600">€{(data.revenue / 1000).toFixed(0)}K</div>
+                  {breakEvenMonth <= 18 && (
+                    <div className="flex items-start gap-2 p-3 bg-green-50 rounded-lg">
+                      <CheckCircle className="w-4 h-4 text-green-600 mt-0.5" />
+                      <div className="text-sm">
+                        <div className="font-medium text-green-900">Break-even rapido!</div>
+                        <div className="text-green-700">Raggiungi profittabilità in {breakEvenMonth} mesi</div>
                       </div>
                     </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-4 mt-4 text-xs">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-green-500 rounded"></div>
-                    <span>Revenue</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 bg-red-500 rounded"></div>
-                    <span>Costi</span>
+                  )}
+                  
+                  {maxBurnRate > 50000 && (
+                    <div className="flex items-start gap-2 p-3 bg-orange-50 rounded-lg">
+                      <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5" />
+                      <div className="text-sm">
+                        <div className="font-medium text-orange-900">Burn rate alto</div>
+                        <div className="text-orange-700">Considera strategie per ridurre costi</div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg">
+                    <Info className="w-4 h-4 text-blue-600 mt-0.5" />
+                    <div className="text-sm">
+                      <div className="font-medium text-blue-900">Crescita prevista</div>
+                      <div className="text-blue-700">{((yearThreeRevenue/yearOneRevenue - 1) * 100).toFixed(0)}% in 3 anni</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Break-even Alert */}
-              {breakEvenMonth <= 36 && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <div className="text-sm font-medium text-green-900 mb-1">Break-even Raggiunto</div>
-                      <div className="text-xs text-green-700">
-                        Il break-even sarà raggiunto al mese {breakEvenMonth} con un investimento massimo di €{maxBurnRate.toLocaleString()}.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Risk Warning */}
-              {maxBurnRate > 50000 && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <div className="text-sm font-medium text-orange-900 mb-1">Burn Rate Elevato</div>
-                      <div className="text-xs text-orange-700">
-                        Il burn rate massimo di €{maxBurnRate.toLocaleString()} richiede un funding significativo.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Quick Export */}
+              {/* Export Options */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Export Proiezioni</h3>
+                <h3 className="font-semibold text-gray-900 mb-4">Export</h3>
                 <div className="space-y-2">
                   <button
                     onClick={exportProjections}
                     className="w-full flex items-center justify-center gap-2 bg-green-50 text-green-600 px-3 py-2 rounded-lg hover:bg-green-100 transition-colors text-sm"
                   >
                     <Download className="w-4 h-4" />
-                    Excel Completo
+                    Excel Investor-Ready
                   </button>
                   <button
                     onClick={() => alert('PDF con grafici esportato!')}
                     className="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm"
                   >
                     <FileText className="w-4 h-4" />
-                    PDF Report
+                    PDF Presentation
                   </button>
                 </div>
               </div>
