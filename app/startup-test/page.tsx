@@ -5,7 +5,7 @@ import { Rocket, ArrowRight, CheckCircle, X, ChevronRight, Award, Zap, TrendingU
 
 export default function StartupReadinessTest() {
   const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [answers, setAnswers] = useState([])
+  const [answers, setAnswers] = useState<number[]>([])
   const [showResults, setShowResults] = useState(false)
 
   // Quiz Questions
