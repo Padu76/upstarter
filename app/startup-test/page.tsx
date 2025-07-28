@@ -72,7 +72,7 @@ export default function StartupReadinessTest() {
     }
   ]
 
-  const handleAnswerSelect = (points) => {
+  const handleAnswerSelect = (points: number) => {
     const newAnswers = [...answers, points]
     setAnswers(newAnswers)
 
