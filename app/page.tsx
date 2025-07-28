@@ -1,16 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Rocket, Users, TrendingUp, ArrowRight, Star, CheckCircle, MessageSquare, Target, Lightbulb, UserPlus, Menu, X, BarChart3, User, Presentation, Award, Zap, Clock } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import Link from 'next/link'
+import { Rocket, Users, TrendingUp, ArrowRight, Star, CheckCircle, MessageSquare, Target, Lightbulb, UserPlus, Menu, X, BarChart3, User, Presentation } from 'lucide-react'
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState('idea')
+  const { data: session, status } = useSession()
+  const [activeTab, setActiveTab] = useState<'idea' | 'team' | 'pitch'>('idea')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false) // Mock auth state
-  const [userEmail, setUserEmail] = useState('') // Mock user data
 
-  const isLoading = false // Mock loading state
-  const mockUserName = userEmail ? userEmail.split('@')[0] : 'User'
+  const isAuthenticated = status === 'authenticated'
+  const isLoading = status === 'loading'
 
   return (
     <div className="min-h-screen bg-white">
@@ -34,14 +35,14 @@ export default function HomePage() {
               <a href="#analizza" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Analizza Idea
               </a>
-              <a href="/team-up" className="text-gray-600 hover:text-gray-900 transition-colors">
+              <Link href="/team-up" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Trova Team
-              </a>
+              </Link>
               <a href="#pitch-deck" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Pitch Deck
               </a>
-              <a href="/startup-test" className="text-gray-600 hover:text-gray-900 transition-colors">
-                Test Startup
+              <a href="#testimonials" className="text-gray-600 hover:text-gray-900 transition-colors">
+                Testimonianze
               </a>
             </div>
 
@@ -55,26 +56,26 @@ export default function HomePage() {
                   <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600">
                     <User className="w-4 h-4" />
                     <span className="hidden lg:inline">
-                      {mockUserName}
+                      {session.user?.name || session.user?.email?.split('@')[0]}
                     </span>
                   </div>
-                  <a 
+                  <Link 
                     href="/dashboard" 
                     className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
                     <BarChart3 className="w-4 h-4" />
                     Dashboard
-                  </a>
+                  </Link>
                 </>
               ) : (
                 // Utente non loggato - Mostra Login + Signup
                 <>
-                  <a href="/auth/signin" className="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors">
+                  <Link href="/auth/signin" className="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors">
                     Accedi
-                  </a>
-                  <a href="/auth/signup" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                  </Link>
+                  <Link href="/auth/signup" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                     Inizia Gratis
-                  </a>
+                  </Link>
                 </>
               )}
             </div>
@@ -102,39 +103,39 @@ export default function HomePage() {
                 <a href="#analizza" className="text-gray-600 hover:text-gray-900 px-4 py-2">
                   Analizza Idea
                 </a>
-                <a href="/team-up" className="text-gray-600 hover:text-gray-900 px-4 py-2">
+                <Link href="/team-up" className="text-gray-600 hover:text-gray-900 px-4 py-2">
                   Trova Team
-                </a>
+                </Link>
                 <a href="#pitch-deck" className="text-gray-600 hover:text-gray-900 px-4 py-2">
                   Pitch Deck
                 </a>
-                <a href="/startup-test" className="text-gray-600 hover:text-gray-900 px-4 py-2">
-                  Test Startup
+                <a href="#testimonials" className="text-gray-600 hover:text-gray-900 px-4 py-2">
+                  Testimonianze
                 </a>
                 <div className="flex flex-col gap-2 px-4 pt-3 border-t border-gray-200">
                   {isAuthenticated ? (
                     // Mobile - Utente loggato
                     <>
                       <div className="text-sm text-gray-600 px-4 py-2">
-                        Benvenuto, {mockUserName}
+                        Benvenuto, {session.user?.name || session.user?.email?.split('@')[0]}
                       </div>
-                      <a 
+                      <Link 
                         href="/dashboard" 
                         className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         <BarChart3 className="w-4 h-4" />
                         Vai alla Dashboard
-                      </a>
+                      </Link>
                     </>
                   ) : (
                     // Mobile - Utente non loggato
                     <>
-                      <a href="/auth/signin" className="text-center text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors">
+                      <Link href="/auth/signin" className="text-center text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors">
                         Accedi
-                      </a>
-                      <a href="/auth/signup" className="text-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                      </Link>
+                      <Link href="/auth/signup" className="text-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                         Inizia Gratis
-                      </a>
+                      </Link>
                     </>
                   )}
                 </div>
@@ -165,16 +166,24 @@ export default function HomePage() {
                   imprenditoriale
                 </h1>
                 <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                  Ciao {mockUserName}! 
+                  Ciao {session.user?.name || session.user?.email?.split('@')[0]}! 
                   Torna alla tua dashboard per continuare ad analizzare idee e costruire il tuo team.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <a href="/auth/signup" className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-semibold">
-                    Inizia Gratuitamente
-                  </a>
-                  <a href="#come-funziona" className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:bg-gray-50 transition-colors text-lg font-semibold">
-                    Scopri Come Funziona
-                  </a>
+                  <Link 
+                    href="/dashboard" 
+                    className="flex items-center justify-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-semibold"
+                  >
+                    <BarChart3 className="w-5 h-5" />
+                    Vai alla Dashboard
+                  </Link>
+                  <Link 
+                    href="/team-up" 
+                    className="flex items-center justify-center gap-2 border border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:bg-gray-50 transition-colors text-lg font-semibold"
+                  >
+                    <Users className="w-5 h-5" />
+                    Esplora Team-Up
+                  </Link>
                 </div>
               </>
             ) : (
@@ -192,9 +201,9 @@ export default function HomePage() {
                   ti aiuta a trovare co-founder perfetti e ti guida verso il successo imprenditoriale.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <a href="/auth/signup" className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-semibold">
+                  <Link href="/auth/signup" className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-semibold">
                     Inizia Gratuitamente
-                  </a>
+                  </Link>
                   <a href="#come-funziona" className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:bg-gray-50 transition-colors text-lg font-semibold">
                     Scopri Come Funziona
                   </a>
@@ -213,8 +222,8 @@ export default function HomePage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Accesso Rapido</h2>
               <p className="text-gray-600">Le tue funzionalità preferite a portata di click</p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-              <a 
+            <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <Link 
                 href="/dashboard/new-idea" 
                 className="group bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 hover:from-blue-100 hover:to-blue-200 transition-all duration-200 border border-blue-200"
               >
@@ -226,9 +235,9 @@ export default function HomePage() {
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">Analizza Nuova Idea</h3>
                 <p className="text-sm text-gray-600">Carica un documento o compila il form guidato</p>
-              </a>
+              </Link>
 
-              <a 
+              <Link 
                 href="/team-up" 
                 className="group bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 hover:from-purple-100 hover:to-purple-200 transition-all duration-200 border border-purple-200"
               >
@@ -240,9 +249,9 @@ export default function HomePage() {
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">Trova Co-founder</h3>
                 <p className="text-sm text-gray-600">Esplora profili e crea il tuo team perfetto</p>
-              </a>
+              </Link>
 
-              <a 
+              <Link 
                 href="/pitch-builder" 
                 className="group bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 hover:from-orange-100 hover:to-orange-200 transition-all duration-200 border border-orange-200 relative"
               >
@@ -253,108 +262,15 @@ export default function HomePage() {
                   <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Presentation className="w-6 h-6 text-white" />
                   </div>
-                  <ArrowRight className="w-5 h-5 text-orange-600 group-
-
-      {/* Startup Readiness Test Promo Section */}
-      <section className="py-16 bg-gradient-to-br from-orange-50 via-white to-red-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-orange-100 relative">
-              {/* Background pattern */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="absolute top-4 right-4 w-16 h-16 bg-orange-500 rounded-full"></div>
-                <div className="absolute bottom-4 left-4 w-12 h-12 bg-red-500 rounded-full"></div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-0 relative">
-                {/* Left Side - Content */}
-                <div className="p-8 flex flex-col justify-center">
-                  <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-100 to-red-100 px-3 py-1.5 rounded-full mb-4 w-fit">
-                    <Award className="w-4 h-4 text-orange-600" />
-                    <span className="text-orange-700 font-semibold text-sm">STARTUP READINESS TEST</span>
-                  </div>
-                  
-                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                    La tua idea ha i requisiti per essere una{' '}
-                    <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                      startup
-                    </span>
-                    ?
-                  </h2>
-                  
-                  <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                    Scopri in 3 minuti se la tua idea può diventare la prossima unicorn o se è più adatta per un business tradizionale
-                  </p>
-
-                  <div className="flex items-center gap-4 mb-6 text-sm text-gray-500">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-orange-600" />
-                      <span>Solo 3 minuti</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Gratuito</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-blue-600" />
-                      <span>Report istantaneo</span>
-                    </div>
-                  </div>
-
-                  <a
-                    href="/startup-test"
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-8 py-4 rounded-xl hover:from-orange-700 hover:to-red-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 w-fit"
-                  >
-                    Fai il Test Ora
-                    <ArrowRight className="w-5 h-5" />
-                  </a>
+                  <ArrowRight className="w-5 h-5 text-orange-600 group-hover:translate-x-1 transition-transform" />
                 </div>
-
-                {/* Right Side - Visual */}
-                <div className="bg-gradient-to-br from-orange-500 to-red-600 p-8 flex flex-col justify-center text-white">
-                  <div className="space-y-6">
-                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                          <Zap className="w-4 h-4" />
-                        </div>
-                        <span className="font-semibold">Scalabilità</span>
-                      </div>
-                      <div className="text-sm text-orange-100">
-                        Quanto può crescere la tua idea
-                      </div>
-                    </div>
-
-                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                          <TrendingUp className="w-4 h-4" />
-                        </div>
-                        <span className="font-semibold">Attrattività Investitori</span>
-                      </div>
-                      <div className="text-sm text-orange-100">
-                        Se può interessare VC e angel
-                      </div>
-                    </div>
-
-                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                          <Target className="w-4 h-4" />
-                        </div>
-                        <span className="font-semibold">Prossimi Passi</span>
-                      </div>
-                      <div className="text-sm text-orange-100">
-                        Roadmap personalizzata per te
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Pitch Deck Builder</h3>
+                <p className="text-sm text-gray-600">Presentazioni AI per investitori</p>
+              </Link>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Come Funziona Section */}
       <section id="come-funziona" className="py-20 bg-white">
@@ -467,20 +383,20 @@ export default function HomePage() {
                       </li>
                       <li className="flex items-center gap-3">
                         <CheckCircle className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-700">Tracciamento dell'evoluzione nel tempo</span>
+                        <span className="text-gray-700">Tracciamento dell&apos;evoluzione nel tempo</span>
                       </li>
                       <li className="flex items-center gap-3">
                         <CheckCircle className="w-5 h-5 text-green-500" />
                         <span className="text-gray-700">Suggerimenti di miglioramento continui</span>
                       </li>
                     </ul>
-                    <a
+                    <Link
                       href={isAuthenticated ? "/dashboard/new-idea" : "/auth/signup"}
                       className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
                     >
                       {isAuthenticated ? "Analizza Nuova Idea" : "Analizza la Tua Idea"}
                       <ArrowRight className="w-4 h-4" />
-                    </a>
+                    </Link>
                   </div>
                   <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6">
                     <div className="bg-white rounded-lg p-4 mb-4">
@@ -534,13 +450,13 @@ export default function HomePage() {
                         <span className="text-gray-700">Sistema di messaggistica integrato</span>
                       </li>
                     </ul>
-                    <a
+                    <Link
                       href="/team-up"
                       className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold"
                     >
                       Trova il Tuo Team
                       <ArrowRight className="w-4 h-4" />
-                    </a>
+                    </Link>
                   </div>
                   <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6">
                     <div className="space-y-4">
@@ -605,13 +521,13 @@ export default function HomePage() {
                         <span className="text-gray-700">Export PDF, PowerPoint, Keynote</span>
                       </li>
                     </ul>
-                    <a
+                    <Link
                       href={isAuthenticated ? "/pitch-builder" : "/auth/signup"}
                       className="inline-flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors font-semibold"
                     >
                       {isAuthenticated ? "Crea Pitch Deck" : "Inizia a Creare Pitch Deck"}
                       <ArrowRight className="w-4 h-4" />
-                    </a>
+                    </Link>
                   </div>
                   <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6">
                     <div className="space-y-4">
@@ -659,7 +575,7 @@ export default function HomePage() {
                 ))}
               </div>
               <p className="text-gray-600 mb-6 italic">
-                "UpStarter mi ha aiutato a strutturare la mia idea e trovare il co-founder perfetto. Ora la nostra startup ha raccolto 500K di investimenti!"
+                &quot;UpStarter mi ha aiutato a strutturare la mia idea e trovare il co-founder perfetto. Ora la nostra startup ha raccolto 500K di investimenti!&quot;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
@@ -679,7 +595,7 @@ export default function HomePage() {
                 ))}
               </div>
               <p className="text-gray-600 mb-6 italic">
-                "L'analisi sistema mi ha aperto gli occhi su aspetti del mio business che non avevo considerato. Raccomando UpStarter a tutti gli aspiranti imprenditori!"
+                &quot;L&apos;analisi sistema mi ha aperto gli occhi su aspetti del mio business che non avevo considerato. Raccomando UpStarter a tutti gli aspiranti imprenditori!&quot;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
@@ -699,7 +615,7 @@ export default function HomePage() {
                 ))}
               </div>
               <p className="text-gray-600 mb-6 italic">
-                "Il Pitch Deck Builder mi ha permesso di creare una presentazione professionale che ha colpito gli investitori. Raccolti 1.2M in Serie A!"
+                &quot;Il Pitch Deck Builder mi ha permesso di creare una presentazione professionale che ha colpito gli investitori. Raccolti 1.2M in Serie A!&quot;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center">
@@ -727,7 +643,7 @@ export default function HomePage() {
               : "Unisciti a migliaia di imprenditori che hanno scelto UpStarter per il loro percorso startup"
             }
           </p>
-          <a
+          <Link
             href={isAuthenticated ? "/dashboard" : "/auth/signup"}
             className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors text-lg font-semibold"
           >
@@ -742,7 +658,7 @@ export default function HomePage() {
                 <ArrowRight className="w-5 h-5" />
               </>
             )}
-          </a>
+          </Link>
           <p className="text-blue-100 text-sm mt-4">
             {isAuthenticated 
               ? "I tuoi progetti ti stanno aspettando"
@@ -772,9 +688,8 @@ export default function HomePage() {
               <h4 className="font-semibold mb-4">Prodotto</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#analizza" className="hover:text-white transition-colors">Analisi Idee</a></li>
-                <li><a href="/team-up" className="hover:text-white transition-colors">TeamUp</a></li>
+                <li><Link href="/team-up" className="hover:text-white transition-colors">TeamUp</Link></li>
                 <li><a href="#pitch-deck" className="hover:text-white transition-colors">Pitch Deck Builder</a></li>
-                <li><a href="/startup-test" className="hover:text-white transition-colors">Test Startup</a></li>
                 <li><a href="#come-funziona" className="hover:text-white transition-colors">Come Funziona</a></li>
               </ul>
             </div>
