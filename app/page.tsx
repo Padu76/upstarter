@@ -508,100 +508,6 @@ export default function HomePage() {
               </div>
             </div>
 
-      {/* Startup Readiness Test Promo Section */}
-      <section className="py-16 bg-gradient-to-br from-orange-50 via-white to-red-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-orange-100 relative">
-              {/* Background pattern */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="absolute top-4 right-4 w-16 h-16 bg-orange-500 rounded-full"></div>
-                <div className="absolute bottom-4 left-4 w-12 h-12 bg-red-500 rounded-full"></div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-0 relative">
-                {/* Left Side - Content */}
-                <div className="p-8 flex flex-col justify-center">
-                  <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-100 to-red-100 px-3 py-1.5 rounded-full mb-4 w-fit">
-                    <Award className="w-4 h-4 text-orange-600" />
-                    <span className="text-orange-700 font-semibold text-sm">STARTUP READINESS TEST</span>
-                  </div>
-                  
-                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                    La tua idea ha i requisiti per essere una{' '}
-                    <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                      startup
-                    </span>
-                    ?
-                  </h2>
-                  
-                  <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                    Scopri in 3 minuti se la tua idea può diventare la prossima unicorn o se è più adatta per un business tradizionale
-                  </p>
-
-                  <div className="flex items-center gap-4 mb-6 text-sm text-gray-500">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-orange-600" />
-                      <span>Solo 3 minuti</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Gratuito</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-blue-600" />
-                      <span>Report istantaneo</span>
-                    </div>
-                  </div>
-
-                  <a
-                    href="/startup-test"
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-8 py-4 rounded-xl hover:from-orange-700 hover:to-red-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 w-fit"
-                  >
-                    Fai il Test Ora
-                    <ArrowRight className="w-5 h-5" />
-                  </a>
-                </div>
-
-                {/* Right Side - Visual */}
-                <div className="bg-gradient-to-br from-orange-500 to-red-600 p-8 flex flex-col justify-center text-white">
-                  <div className="space-y-6">
-                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                          <Zap className="w-4 h-4" />
-                        </div>
-                        <span className="font-semibold">Scalabilità</span>
-                      </div>
-                      <div className="text-sm text-orange-100">
-                        Quanto può crescere la tua idea
-                      </div>
-                    </div>
-
-                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                          <TrendingUp className="w-4 h-4" />
-                        </div>
-                        <span className="font-semibold">Attrattività Investitori</span>
-                      </div>
-                      <div className="text-sm text-orange-100">
-                        Se può interessare VC e angel
-                      </div>
-                    </div>
-
-                    <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                          <Target className="w-4 h-4" />
-                        </div>
-                        <span className="font-semibold">Prossimi Passi</span>
-                      </div>
-                      <div className="text-sm text-orange-100">
-                        Roadmap personalizzata per te
-                      </div>
-                    </div>
-                  </div>
             {/* 4. Startup Test */}
             <div id="startup-test" className="max-w-5xl mx-auto">
               <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-red-100 relative">
@@ -793,7 +699,7 @@ export default function HomePage() {
       </section>
 
       {/* Come Funziona Section */}
-      <section id="come-funziona" className="py-20 bg-white">
+      <section id="come-funziona" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Come Funziona UpStarter</h2>
@@ -819,7 +725,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">2. Trova il Team Perfetto</h3>
               <p className="text-gray-600 leading-relaxed">
-                Usa TeamUp per connetterti con co-founder, sviluppatori, marketer e altri professionisti. Il nostro algoritmo di matching trova le persone giuste per il tuo progetto.
+                Usa TeamUp per connetterti con co-founder, sviluppatori, marketer e altri professionali. Il nostro algoritmo di matching trova le persone giuste per il tuo progetto.
               </p>
             </div>
 
@@ -837,7 +743,7 @@ export default function HomePage() {
       </section>
 
       {/* Main CTA Section */}
-      <section id="analizza" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Inizia Il Tuo Percorso Imprenditoriale</h2>
@@ -846,7 +752,7 @@ export default function HomePage() {
 
           {/* Tab Navigation */}
           <div className="flex justify-center mb-8">
-            <div className="bg-white p-1 rounded-lg shadow-sm flex flex-wrap">
+            <div className="bg-white p-1 rounded-lg shadow-sm flex flex-wrap border">
               <button
                 onClick={() => setActiveTab('idea')}
                 className={`px-6 py-3 rounded-lg font-semibold transition-all ${
@@ -886,7 +792,7 @@ export default function HomePage() {
           {/* Tab Content */}
           <div className="max-w-4xl mx-auto">
             {activeTab === 'idea' && (
-              <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="bg-white rounded-2xl shadow-xl p-8 border">
                 <div className="grid md:grid-cols-2 gap-8 items-center">
                   <div>
                     <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
@@ -946,7 +852,7 @@ export default function HomePage() {
             )}
 
             {activeTab === 'team' && (
-              <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="bg-white rounded-2xl shadow-xl p-8 border">
                 <div className="grid md:grid-cols-2 gap-8 items-center">
                   <div>
                     <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
@@ -1017,7 +923,7 @@ export default function HomePage() {
             )}
 
             {activeTab === 'pitch' && (
-              <div id="pitch-deck" className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="bg-white rounded-2xl shadow-xl p-8 border">
                 <div className="grid md:grid-cols-2 gap-8 items-center">
                   <div>
                     <div className="w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center mb-6">
@@ -1080,7 +986,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-20 bg-white">
+      <section id="testimonials" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Cosa Dicono i Founder</h2>
@@ -1207,11 +1113,11 @@ export default function HomePage() {
             <div>
               <h4 className="font-semibold mb-4">Prodotto</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#analizza" className="hover:text-white transition-colors">Analisi Idee</a></li>
-                <li><a href="/team-up" className="hover:text-white transition-colors">TeamUp</a></li>
+                <li><a href="#analizza-idea" className="hover:text-white transition-colors">Analisi Idee</a></li>
+                <li><a href="#trova-team" className="hover:text-white transition-colors">TeamUp</a></li>
                 <li><a href="#pitch-deck" className="hover:text-white transition-colors">Pitch Deck Builder</a></li>
-                <li><a href="/startup-test" className="hover:text-white transition-colors">Test Startup</a></li>
-                <li><a href="#come-funziona" className="hover:text-white transition-colors">Come Funziona</a></li>
+                <li><a href="#startup-test" className="hover:text-white transition-colors">Test Startup</a></li>
+                <li><a href="#financial-planning" className="hover:text-white transition-colors">Financial Planning</a></li>
               </ul>
             </div>
 
