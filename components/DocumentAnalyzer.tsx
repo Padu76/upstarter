@@ -83,6 +83,25 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
     }
   }
 
+  const loadPdfJs = async () => {
+    // Carica PDF.js dalla CDN per evitare problemi di compatibilità
+    if (typeof window !== 'undefined' && !(window as any).pdfjsLib) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+        script.onload = () => {
+          // Configura il worker
+          ;(window as any).pdfjsLib.GlobalWorkerOptions.workerSrc = 
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+          resolve((window as any).pdfjsLib)
+        }
+        script.onerror = () => reject(new Error('Errore nel caricamento di PDF.js'))
+        document.head.appendChild(script)
+      })
+    }
+    return (window as any).pdfjsLib
+  }
+
   const extractTextFromFile = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const fileExtension = file.name.toLowerCase().split('.').pop()
@@ -121,17 +140,14 @@ export default function DocumentAnalyzer({ onAnalysisComplete }: DocumentAnalyze
         reader.onerror = () => reject(new Error('Errore nella lettura del file Word'))
         reader.readAsArrayBuffer(file)
       } else if (fileExtension === 'pdf') {
-        // Handle PDF documents using PDF.js
+        // Handle PDF documents using PDF.js from CDN
         setProcessingStatus('Elaborazione documento PDF in corso...')
         
         const reader = new FileReader()
         reader.onload = async (e) => {
           try {
-            // Dynamically import PDF.js
-            const pdfjsLib = await import('pdfjs-dist')
-            
-            // Set worker source for PDF.js
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+            // Carica PDF.js dalla CDN
+            const pdfjsLib = await loadPdfJs()
             
             const arrayBuffer = e.target?.result as ArrayBuffer
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
