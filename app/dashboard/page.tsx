@@ -7,7 +7,7 @@ import {
   BarChart3, CheckCircle, Clock, FileText, Upload, Edit2, Trash2, 
   Check, X, RefreshCw, ArrowRight, Plus, TrendingUp, Users, 
   Lightbulb, Target, Calendar, Bell, Presentation, Calculator,
-  Eye, MessageSquare, Award, Activity
+  Eye, MessageSquare, Award, Activity, AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -16,22 +16,53 @@ interface Project {
   title: string
   description: string
   score: number
-  status: 'completed' | 'draft'
-  type: 'guided' | 'document' | 'professional'
+  status: 'completed' | 'draft' | 'analyzed' | 'archived'
+  type: 'guided' | 'document' | 'professional' | 'standard'
   source: string
   created_at: string
   updated_at: string
-  analysis_id: string
+  analysis_id?: string
   regenerated_at?: string
+  user_email: string
+}
+
+interface ProjectStats {
+  total: number
+  analyzed: number
+  draft: number
+  archived: number
+  avgScore: number
+}
+
+interface ApiResponse {
+  success: boolean
+  projects: Project[]
+  stats: ProjectStats
+  data_source: {
+    airtable: number
+    localStorage: number
+    error: string | null
+  }
+  error?: string
 }
 
 export default function DashboardMain() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
+  const [stats, setStats] = useState<ProjectStats>({
+    total: 0,
+    analyzed: 0,
+    draft: 0,
+    archived: 0,
+    avgScore: 0
+  })
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [editingProject, setEditingProject] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
+  const [dataSource, setDataSource] = useState<{airtable: number, localStorage: number, error: string | null} | null>(null)
   const [notifications] = useState([
     {
       id: 1,
@@ -47,44 +78,70 @@ export default function DashboardMain() {
     }
   ])
 
+  // Carica progetti all'avvio
   useEffect(() => {
-    loadProjects()
-    
-    // Listen for project updates
-    const handleProjectUpdate = () => {
+    if (status === 'authenticated') {
       loadProjects()
     }
-    
-    window.addEventListener('projectsUpdated', handleProjectUpdate)
-    return () => window.removeEventListener('projectsUpdated', handleProjectUpdate)
-  }, [])
+  }, [status])
 
-  const loadProjects = () => {
+  const loadProjects = async (showRefreshing = false) => {
     try {
-      setIsLoading(true)
-      const storedProjects = localStorage.getItem('projects')
-      if (storedProjects) {
-        const parsedProjects = JSON.parse(storedProjects)
-        // Ordina per data più recente
-        const sortedProjects = parsedProjects.sort((a: Project, b: Project) => 
-          new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
-        )
-        setProjects(sortedProjects)
+      if (showRefreshing) {
+        setIsRefreshing(true)
       } else {
-        setProjects([])
+        setIsLoading(true)
       }
+      setError(null)
+
+      const response = await fetch('/api/projects', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data: ApiResponse = await response.json()
+
+      if (data.success) {
+        setProjects(data.projects || [])
+        setStats(data.stats || {
+          total: 0,
+          analyzed: 0,
+          draft: 0,
+          archived: 0,
+          avgScore: 0
+        })
+        setDataSource(data.data_source || null)
+        
+        console.log('✅ Progetti caricati:', data.projects?.length || 0)
+        console.log('📊 Stats:', data.stats)
+        console.log('🔄 Data source:', data.data_source)
+        
+      } else {
+        throw new Error(data.error || 'Errore nel caricamento progetti')
+      }
+
     } catch (error) {
-      console.error('Error loading projects:', error)
+      console.error('❌ Errore caricamento progetti:', error)
+      setError(error instanceof Error ? error.message : 'Errore sconosciuto')
       setProjects([])
+      setStats({
+        total: 0,
+        analyzed: 0,
+        draft: 0,
+        archived: 0,
+        avgScore: 0
+      })
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
     }
   }
 
   const deleteProject = async (projectId: string) => {
     try {
-      const projects = JSON.parse(localStorage.getItem('projects') || '[]')
-      const project = projects.find((p: any) => p.id === projectId)
+      const project = projects.find(p => p.id === projectId)
       
       const confirmed = window.confirm(
         `Sei sicuro di voler eliminare "${project?.title}"?\n\nQuesta azione eliminerà il progetto e l'analisi associata.`
@@ -92,20 +149,28 @@ export default function DashboardMain() {
       
       if (!confirmed) return
       
-      const updatedProjects = projects.filter((p: any) => p.id !== projectId)
-      localStorage.setItem('projects', JSON.stringify(updatedProjects))
+      const response = await fetch(`/api/projects?id=${projectId}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
       
-      // Rimuovi analisi associata
-      if (project?.analysis_id) {
-        localStorage.removeItem(`analysis_${project.analysis_id}`)
-        localStorage.removeItem(`analysis_analysis_${project.analysis_id}`)
+      if (data.success) {
+        // Rimuovi il progetto dalla lista locale
+        setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId))
+        
+        // Aggiorna le statistiche
+        const updatedProjects = projects.filter(p => p.id !== projectId)
+        updateStatsFromProjects(updatedProjects)
+        
+        console.log('✅ Progetto eliminato:', projectId)
+      } else {
+        throw new Error(data.error || 'Errore eliminazione progetto')
       }
       
-      setProjects(updatedProjects)
-      window.dispatchEvent(new Event('projectsUpdated'))
-      
     } catch (error) {
-      console.error('Errore eliminazione progetto:', error)
+      console.error('❌ Errore eliminazione progetto:', error)
+      alert('Errore durante l\'eliminazione del progetto. Riprova.')
     }
   }
 
@@ -121,19 +186,40 @@ export default function DashboardMain() {
         return
       }
 
-      const projects = JSON.parse(localStorage.getItem('projects') || '[]')
-      const updatedProjects = projects.map((p: any) => 
-        p.id === projectId ? { ...p, title: newTitle.trim(), updated_at: new Date().toISOString() } : p
-      )
-      localStorage.setItem('projects', JSON.stringify(updatedProjects))
+      const response = await fetch('/api/projects', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: projectId,
+          title: newTitle.trim(),
+        }),
+      })
 
-      setProjects(updatedProjects)
-      setEditingProject(null)
-      setNewTitle('')
-      window.dispatchEvent(new Event('projectsUpdated'))
+      const data = await response.json()
+
+      if (data.success) {
+        // Aggiorna il progetto nella lista locale
+        setProjects(prevProjects => 
+          prevProjects.map(p => 
+            p.id === projectId 
+              ? { ...p, title: newTitle.trim(), updated_at: new Date().toISOString() }
+              : p
+          )
+        )
+        
+        setEditingProject(null)
+        setNewTitle('')
+        
+        console.log('✅ Progetto rinominato:', projectId)
+      } else {
+        throw new Error(data.error || 'Errore rinomina progetto')
+      }
       
     } catch (error) {
-      console.error('Errore rinomina progetto:', error)
+      console.error('❌ Errore rinomina progetto:', error)
+      alert('Errore durante la rinomina del progetto. Riprova.')
     }
   }
 
@@ -142,12 +228,27 @@ export default function DashboardMain() {
     setNewTitle('')
   }
 
+  const updateStatsFromProjects = (projectList: Project[]) => {
+    const newStats = {
+      total: projectList.length,
+      analyzed: projectList.filter(p => p.status === 'analyzed' || p.status === 'completed').length,
+      draft: projectList.filter(p => p.status === 'draft').length,
+      archived: projectList.filter(p => p.status === 'archived').length,
+      avgScore: projectList.length > 0 ? 
+        Math.round(projectList.reduce((sum, p) => sum + p.score, 0) / projectList.length) : 0
+    }
+    setStats(newStats)
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
+      case 'analyzed':
         return <CheckCircle className="w-4 h-4 text-green-500" />
       case 'draft':
         return <Clock className="w-4 h-4 text-yellow-500" />
+      case 'archived':
+        return <FileText className="w-4 h-4 text-gray-500" />
       default:
         return <FileText className="w-4 h-4 text-gray-500" />
     }
@@ -156,9 +257,12 @@ export default function DashboardMain() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'completed':
+      case 'analyzed':
         return 'Completata'
       case 'draft':
         return 'Bozza'
+      case 'archived':
+        return 'Archiviata'
       default:
         return 'Sconosciuto'
     }
@@ -167,9 +271,12 @@ export default function DashboardMain() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
+      case 'analyzed':
         return 'bg-green-50 text-green-700'
       case 'draft':
         return 'bg-yellow-50 text-yellow-700'
+      case 'archived':
+        return 'bg-gray-50 text-gray-700'
       default:
         return 'bg-gray-50 text-gray-700'
     }
@@ -188,12 +295,6 @@ export default function DashboardMain() {
     }
   }
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600'
-    if (score >= 60) return 'text-yellow-600'
-    return 'text-red-600'
-  }
-
   const formatDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString('it-IT', {
@@ -206,30 +307,81 @@ export default function DashboardMain() {
     }
   }
 
-  // Calcola statistiche reali
-  const completedProjects = projects.filter(p => p.status === 'completed').length
-  const averageScore = projects.length > 0 ? Math.round(projects.reduce((sum, p) => sum + p.score, 0) / projects.length) : 0
-  const recentProjects = projects.slice(0, 3) // Mostra solo i 3 più recenti
+  // Loading state durante autenticazione
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  // Not authenticated
+  if (status === 'unauthenticated') {
+    router.push('/auth/signin')
+    return null
+  }
+
+  // Mostra i 3 progetti più recenti nella dashboard
+  const recentProjects = projects.slice(0, 3)
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Benvenuto, {session?.user?.name?.split(' ')[0] || 'Founder'}! 👋
-        </h1>
-        <p className="text-gray-600">
-          Ecco una panoramica del tuo percorso imprenditoriale
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Benvenuto, {session?.user?.name?.split(' ')[0] || 'Founder'}!
+            </h1>
+            <p className="text-gray-600">
+              Ecco una panoramica del tuo percorso imprenditoriale
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Data Source Info */}
+            {dataSource && (
+              <div className="text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
+                Airtable: {dataSource.airtable} | Local: {dataSource.localStorage}
+                {dataSource.error && <span className="text-red-500 ml-1">⚠️</span>}
+              </div>
+            )}
+            <button
+              onClick={() => loadProjects(true)}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Aggiornando...' : 'Aggiorna'}
+            </button>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-red-800 font-medium">Errore caricamento dati</p>
+              <p className="text-red-600 text-sm mt-1">{error}</p>
+              <button
+                onClick={() => loadProjects()}
+                className="text-red-600 hover:text-red-800 text-sm underline mt-2"
+              >
+                Riprova
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Quick Stats - DATI REALI */}
+      {/* Quick Stats - DATI REALI DA API */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Progetti Analizzati</p>
-              <p className="text-2xl font-bold text-gray-900">{completedProjects}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.analyzed}</p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
               <BarChart3 className="w-6 h-6 text-blue-600" />
@@ -241,7 +393,7 @@ export default function DashboardMain() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Score Medio</p>
-              <p className="text-2xl font-bold text-gray-900">{averageScore}%</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.avgScore}%</p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-green-600" />
@@ -253,7 +405,7 @@ export default function DashboardMain() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Progetti Totali</p>
-              <p className="text-2xl font-bold text-gray-900">{projects.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
             </div>
             <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
               <Presentation className="w-6 h-6 text-orange-600" />
@@ -343,7 +495,7 @@ export default function DashboardMain() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Projects List - DATI REALI */}
+        {/* Projects List - DATI REALI DA API */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
@@ -428,7 +580,7 @@ export default function DashboardMain() {
                                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
                                   {getStatusText(project.status)}
                                 </span>
-                                {project.status === 'completed' && (
+                                {(project.status === 'completed' || project.status === 'analyzed') && (
                                   <span className="text-sm text-gray-500">Score: {project.score}%</span>
                                 )}
                                 <span className="text-sm text-gray-500">
@@ -440,13 +592,15 @@ export default function DashboardMain() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => router.push(`/dashboard/analysis/${project.analysis_id}`)}
-                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Visualizza analisi"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
+                        {project.analysis_id && (
+                          <button 
+                            onClick={() => router.push(`/dashboard/analysis/${project.analysis_id}`)}
+                            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Visualizza analisi"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        )}
                         <button 
                           onClick={() => startEditing(project)}
                           className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
@@ -549,14 +703,14 @@ export default function DashboardMain() {
                   <TrendingUp className="w-4 h-4 text-green-600" />
                   <span className="text-sm text-gray-600">Score medio</span>
                 </div>
-                <span className="font-medium text-green-600">{averageScore}%</span>
+                <span className="font-medium text-green-600">{stats.avgScore}%</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-purple-600" />
                   <span className="text-sm text-gray-600">Progetti completati</span>
                 </div>
-                <span className="font-medium text-gray-900">{completedProjects}</span>
+                <span className="font-medium text-gray-900">{stats.analyzed}</span>
               </div>
             </div>
           </div>
